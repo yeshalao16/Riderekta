@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-// 🔗 Backend API URL
+// API endpoint
 const String apiUrl = "http://10.0.2.2/riderekta/login.php";
+const String registerUrl = "http://10.0.2.2/riderekta/register.php";
+
 
 void main() {
   runApp(const RiderektaApp());
@@ -362,15 +364,87 @@ class RouteSafetyScreen extends StatelessWidget {
   }
 }
 
-class SettingsScreen extends StatelessWidget {
+// Updated Settings Screen with User Profile & Settings
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController emailController = TextEditingController(text: 'user@example.com');
+  final TextEditingController mobileController = TextEditingController(text: '123-456-7890');
+  final TextEditingController passwordController = TextEditingController(text: 'password123');
+  bool notifications = true;
+  bool privacy = true;
+
+  void _saveProfile() {
+    setState(() {
+      // Simulating saving data
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile updated")));
+    });
+  }
+
+  void _toggleNotifications(bool value) {
+    setState(() {
+      notifications = value;
+    });
+  }
+
+  void _togglePrivacy(bool value) {
+    setState(() {
+      privacy = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Settings")),
-      body: const Center(
-        child: Text("Customize your Riderekta experience.", style: TextStyle(fontSize: 16)),
+      appBar: AppBar(title: const Text("User Profile & Settings")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const Text("Edit Profile", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: emailController,
+                decoration: const InputDecoration(labelText: "Email"),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: mobileController,
+                decoration: const InputDecoration(labelText: "Mobile Number"),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Password"),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveProfile,
+                child: const Text("Save Changes"),
+              ),
+              const SizedBox(height: 40),
+              const Text("App Settings", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              SwitchListTile(
+                title: const Text("Enable Notifications"),
+                value: notifications,
+                onChanged: _toggleNotifications,
+              ),
+              SwitchListTile(
+                title: const Text("Accept Privacy Policy"),
+                value: privacy,
+                onChanged: _togglePrivacy,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -390,7 +464,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> login() async {
     try {
-      // ✅ send as form-data (NOT JSON) to match PHP $_POST
       final response = await http.post(
         Uri.parse(apiUrl),
         body: {
@@ -399,9 +472,7 @@ class _LoginScreenState extends State<LoginScreen> {
         },
       );
 
-      // Debugging: check what the backend actually returns
       print("Response: ${response.body}");
-
       final data = jsonDecode(response.body);
 
       if (data["success"]) {
@@ -438,8 +509,9 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _emailController,
               decoration: InputDecoration(
                 labelText: "Email",
-                border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -448,17 +520,135 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
               decoration: InputDecoration(
                 labelText: "Password",
-                border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: login,
               style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple),
+                backgroundColor: Colors.deepPurple,
+              ),
               child: const Text(
                 "Login",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterScreen(),
+                  ),
+                );
+              },
+              child: const Text(
+                "Don't have an account? Sign Up",
+                style: TextStyle(color: Colors.deepPurple),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ✅ Registration Screen
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> register() async {
+    try {
+      final response = await http.post(
+        Uri.parse(registerUrl),
+        body: {
+          "name": _nameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text.trim(),
+        },
+      );
+
+      print("Register Response: ${response.body}");
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Registration successful!")),
+        );
+        Navigator.pop(context); // go back to login
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Sign Up")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: "Full Name",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: register,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+              ),
+              child: const Text(
+                "Sign Up",
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -469,7 +659,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ✅ Placeholder page shown after successful login
+// ✅ After successful login
 class NextPage extends StatelessWidget {
   const NextPage({super.key});
 
