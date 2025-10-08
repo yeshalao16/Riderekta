@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+// 🔗 Backend API URL
+const String apiUrl = "http://10.0.2.2/riderekta/login.php";
 
 void main() {
   runApp(const RiderektaApp());
@@ -371,8 +376,54 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class LoginScreen extends StatelessWidget {
+//  Login Screen
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> login() async {
+    try {
+      // ✅ send as form-data (NOT JSON) to match PHP $_POST
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: {
+          "email": _emailController.text.trim(),
+          "password": _passwordController.text.trim(),
+        },
+      );
+
+      // Debugging: check what the backend actually returns
+      print("Response: ${response.body}");
+
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Login successful!")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const NextPage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -383,29 +434,33 @@ class LoginScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text("Login Page", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 20),
             TextField(
+              controller: _emailController,
               decoration: InputDecoration(
-                labelText: "Username",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                labelText: "Email",
+                border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
                 labelText: "Password",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: login,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                  backgroundColor: Colors.deepPurple),
+              child: const Text(
+                "Login",
+                style: TextStyle(color: Colors.white),
               ),
-              child: const Text("Login", style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -414,3 +469,20 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
+// ✅ Placeholder page shown after successful login
+class NextPage extends StatelessWidget {
+  const NextPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Welcome")),
+      body: const Center(
+        child: Text(
+          "🎉 You have successfully logged in!",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
