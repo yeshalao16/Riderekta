@@ -1,10 +1,11 @@
 <?php
 include 'db_connect.php';
 
-// Check if data is received
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $name = $_POST['name'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $mobile = $_POST['mobile'] ?? '';
+    $password = $_POST['password'] ?? '';
 
     // Check if user already exists
     $checkUser = $conn->prepare("SELECT * FROM users WHERE email = ?");
@@ -17,9 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     }
 
-    // Insert new user
-    $insert = $conn->prepare("INSERT INTO users (email, password) VALUES (?, ?)");
-    $insert->bind_param("ss", $email, $password);
+    // Insert new user with mobile
+    $insert = $conn->prepare("INSERT INTO users (name, email, mobile, password) VALUES (?, ?, ?, ?)");
+    $insert->bind_param("ssss", $name, $email, $mobile, $password);
 
     if ($insert->execute()) {
         echo json_encode(["success" => true, "message" => "Registration successful"]);
