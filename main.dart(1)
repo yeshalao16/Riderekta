@@ -5,6 +5,8 @@ import 'dart:convert';
 // API endpoint
 const String apiUrl = "http://10.0.2.2/riderekta/login.php";
 const String registerUrl = "http://10.0.2.2/riderekta/register.php";
+const String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
+
 
 
 void main() {
@@ -51,34 +53,7 @@ class _MainScreenState extends State<MainScreen>
     super.dispose();
   }
 
-  void _handleMenuSelection(String value) {
-    switch (value) {
-      case 'recent':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RouteHistoryScreen()),
-        );
-        break;
-      case 'specific':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SpecificRouteScreen()),
-        );
-        break;
-      case 'safety':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RouteSafetyScreen()),
-        );
-        break;
-      case 'settings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SettingsScreen()),
-        );
-        break;
-    }
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -322,39 +297,94 @@ class SpecificRouteScreen extends StatelessWidget {
 }
 
 
-
-// Updated Settings Screen with User Profile & Settings
+// ✅ Updated Settings Screen with Editable Fields
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final String email;
+  const SettingsScreen({super.key, required this.email});
 
   @override
   _SettingsScreenState createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TextEditingController emailController = TextEditingController(text: 'user@example.com');
-  final TextEditingController mobileController = TextEditingController(text: '123-456-7890');
-  final TextEditingController passwordController = TextEditingController(text: 'password123');
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController mobileController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   bool notifications = true;
   bool privacy = true;
 
-  void _saveProfile() {
-    setState(() {
-      // Simulating saving data
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Profile updated")));
-    });
+  final String getUserUrl = "http://10.0.2.2/riderekta/get_user.php";
+  final String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData(); // Load data when the screen opens
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final response = await http.post(
+        Uri.parse(getUserUrl),
+        body: {"email": widget.email},
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        final user = data["user"];
+        setState(() {
+          emailController.text = user["email"];
+          mobileController.text = user["mobile"] ?? '';
+          passwordController.text = user["password"];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("⚠️ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    try {
+      final response = await http.post(
+        Uri.parse(updateProfileUrl),
+        body: {
+          "email": emailController.text.trim(),
+          "mobile": mobileController.text.trim(),
+          "password": passwordController.text.trim(),
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Profile updated successfully")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
   }
 
   void _toggleNotifications(bool value) {
-    setState(() {
-      notifications = value;
-    });
+    setState(() => notifications = value);
   }
 
   void _togglePrivacy(bool value) {
-    setState(() {
-      privacy = value;
-    });
+    setState(() => privacy = value);
   }
 
   @override
@@ -386,7 +416,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _saveProfile,
-                child: const Text("Save Changes"),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 40),
               const Text("App Settings", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
@@ -408,6 +439,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
+
 
 //  Login Screen
 class LoginScreen extends StatefulWidget {
@@ -520,7 +553,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-// ✅ Registration Screen
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -531,6 +563,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   Future<void> register() async {
@@ -540,6 +573,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         body: {
           "name": _nameController.text.trim(),
           "email": _emailController.text.trim(),
+          "mobile": _mobileController.text.trim(),
           "password": _passwordController.text.trim(),
         },
       );
@@ -551,7 +585,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("✅ Registration successful!")),
         );
-        Navigator.pop(context); // go back to login
+        Navigator.pop(context);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("❌ ${data["message"]}")),
@@ -594,6 +628,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 16),
             TextField(
+              controller: _mobileController,
+              decoration: InputDecoration(
+                labelText: "Mobile Number",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
               controller: _passwordController,
               obscureText: true,
               decoration: InputDecoration(
@@ -620,6 +664,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+
 
 // After successful login
 // Updated User Dashboard Page with bottom navigation bar
@@ -657,7 +702,9 @@ class _UserDashboardState extends State<UserDashboard> {
       case 'settings':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+          MaterialPageRoute(
+            builder: (context) => SettingsScreen(email: widget.email),
+          ),
         );
         break;
     }
