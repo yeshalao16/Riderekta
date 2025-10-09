@@ -142,6 +142,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       body: SafeArea(
         child: Column(
           children: [
+            // TabBar for top tabs
             TabBar(
               controller: _tabController,
               tabs: const [
@@ -153,6 +154,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.deepPurple,
             ),
+            // TabBarView for corresponding content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -162,6 +164,309 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
                   BenefitsScreen(key: ValueKey('benefits')),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+      // Bottom Navigation Bar for 'Start Route', 'Route History', 'Community'
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0, // Initially set to 'Start Route'
+        onTap: (index) {
+          setState(() {
+            // Set the index for the bottom tabs
+            // You can implement navigation for each tab here
+            switch (index) {
+              case 0:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SpecificRouteScreen()),
+                );
+                break;
+              case 1:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RouteHistoryScreen()),
+                );
+                break;
+              case 2:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CommunityScreen()),
+                );
+                break;
+            }
+          });
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.directions_bike),
+            label: 'Start Route', // First Tab
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history),
+            label: 'Route History', // Second Tab
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.forum),
+            label: 'Community', // Third Tab
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CommunityScreen extends StatelessWidget {
+  const CommunityScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Community and Forums',
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: Colors.black),
+            onPressed: () {
+              // Add functionality for search here
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: "Search Topics",
+                  filled: true,
+                  fillColor: const Color(0xFFFEF7FF),
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16.0),
+                children: [
+                  // Community Post 1
+                  Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundImage: AssetImage('assets/profile.jpg'),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Jane Doe',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Best E-Bike Routes in Manila?',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Hey everyone! Just got a new e-bike and looking for recommendations on the best routes in Manila...',
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: const [
+                              Icon(Icons.thumb_up_alt, size: 16, color: Colors.grey),
+                              SizedBox(width: 4),
+                              Text('45'),
+                              SizedBox(width: 16),
+                              Icon(Icons.comment, size: 16, color: Colors.grey),
+                              SizedBox(width: 4),
+                              Text('12'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Community Post 2
+                  Card(
+                    elevation: 3,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundImage: AssetImage('assets/profile.jpg'),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'CommuteKing',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Any Group Rides This Weekend?',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Looking for any group rides happening this weekend! Let me know if anyone is interested...',
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: const [
+                              Icon(Icons.thumb_up_alt, size: 16, color: Colors.grey),
+                              SizedBox(width: 4),
+                              Text('30'),
+                              SizedBox(width: 16),
+                              Icon(Icons.comment, size: 16, color: Colors.grey),
+                              SizedBox(width: 4),
+                              Text('7'),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Bottom Action Button (Contact Us, Create Post)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to 'Contact Us' screen or show a dialog
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Contact Us'),
+                            content: const Text('Email us at support@riderekta.com for assistance.'),
+                            actions: <Widget>[
+                              TextButton(
+                                child: const Text('OK'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Contact Us',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to 'Create Post' screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text(
+                      'Create a Post',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CreatePostScreen extends StatelessWidget {
+  const CreatePostScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Create Post')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Description',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 5,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                // Handle post submission
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Your post has been created!')),
+                );
+              },
+              child: const Text('Submit Post'),
             ),
           ],
         ),
@@ -330,8 +635,7 @@ class _SpecificRouteScreenState extends State<SpecificRouteScreen> {
                             fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       const SizedBox(height: 8),
-                      Text(calculatedRoute!,
-                          style: const TextStyle(fontSize: 14)),
+                      Text(calculatedRoute!),
                     ],
                   ),
                 ),
@@ -358,7 +662,6 @@ class RouteSafetyScreen extends StatelessWidget {
   }
 }
 
-// Updated Settings Screen with User Profile & Settings
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
