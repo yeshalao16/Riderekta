@@ -978,8 +978,40 @@ class RouteSafetyScreen extends StatelessWidget {
   }
 }
 
-class CommunityScreen extends StatelessWidget {
+class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
+
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  // 📝 List to hold posts
+  final List<Map<String, String>> posts = [
+    {
+      'author': 'Jane Doe',
+      'title': 'Best E-Bike Routes in Manila?',
+      'content':
+      'Hey everyone! Just got a new e-bike and looking for recommendations on the best routes in Manila...',
+      'likes': '45',
+      'comments': '12',
+    },
+    {
+      'author': 'CommuteKing',
+      'title': 'Any Group Rides This Weekend?',
+      'content':
+      'Looking for any group rides happening this weekend! Let me know if anyone is interested...',
+      'likes': '30',
+      'comments': '7',
+    },
+  ];
+
+  // 👇 Add new post
+  void _addNewPost(Map<String, String> newPost) {
+    setState(() {
+      posts.insert(0, newPost); // add to top
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -992,211 +1024,180 @@ class CommunityScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 1,
         centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              // Add functionality for search here
-            },
-          ),
-        ],
       ),
       body: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Search Topics",
-                  filled: true,
-                  fillColor: const Color(0xFFFEF7FF),
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // 🔍 Search bar
+                TextField(
+                  decoration: InputDecoration(
+                    hintText: "Search Topics",
+                    filled: true,
+                    fillColor: const Color(0xFFFEF7FF),
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(16.0),
-                children: [
-                  // Community Post 1
-                  Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundImage: AssetImage('assets/profile.jpg'),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Jane Doe',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Best E-Bike Routes in Manila?',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Hey everyone! Just got a new e-bike and looking for recommendations on the best routes in Manila...',
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: const [
-                              Icon(Icons.thumb_up_alt, size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
-                              Text('45'),
-                              SizedBox(width: 16),
-                              Icon(Icons.comment, size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
-                              Text('12'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Community Post 2
-                  Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundImage: AssetImage('assets/profile.jpg'),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'CommuteKing',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Any Group Rides This Weekend?',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Looking for any group rides happening this weekend! Let me know if anyone is interested...',
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: const [
-                              Icon(Icons.thumb_up_alt, size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
-                              Text('30'),
-                              SizedBox(width: 16),
-                              Icon(Icons.comment, size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
-                              Text('7'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Bottom Action Button (Contact Us, Create Post)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      // Navigate to 'Contact Us' screen or show a dialog
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('Contact Us'),
-                            content: const Text('Email us at support@riderekta.com for assistance.'),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('OK'),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                const SizedBox(height: 16),
+
+                // 🧱 Posts list
+                ListView.builder(
+                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: true,
+                  itemCount: posts.length,
+                  itemBuilder: (context, index) {
+                    final post = posts[index];
+                    return Card(
+                      elevation: 3,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    ),
-                    child: const Text(
-                      'Contact Us',
-                      style: TextStyle(color: Colors.white),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 20,
+                                  backgroundImage:
+                                  AssetImage('assets/profile.jpg'),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  post['author'] ?? 'Anonymous',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              post['title'] ?? '',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(post['content'] ?? ''),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.thumb_up_alt,
+                                    size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(post['likes'] ?? '0'),
+                                const SizedBox(width: 16),
+                                const Icon(Icons.comment,
+                                    size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(post['comments'] ?? '0'),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                // ➕ Create Post Button
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add, color: Colors.white),
+                  label: const Text("Create a Post",
+                      style: TextStyle(color: Colors.white)),
+                  onPressed: () async {
+                    final newPost = await Navigator.push<Map<String, String>>(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const CreatePostScreen()),
+                    );
+                    if (newPost != null) {
+                      _addNewPost(newPost);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Navigate to 'Create Post' screen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Create a Post',
-                      style: TextStyle(color: Colors.white),
+                ),
+
+                const SizedBox(height: 10),
+
+                // 📞 Contact Us Button
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.mail_outline, color: Colors.deepPurple),
+                  label: const Text(
+                    "Contact Us",
+                    style: TextStyle(color: Colors.deepPurple),
+                  ),
+                  onPressed: () {
+                    // TODO: Link to your Contact page or email
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("📩 Contact Us page coming soon!")),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.deepPurple),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class CreatePostScreen extends StatelessWidget {
+
+
+class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
+
+  @override
+  State<CreatePostScreen> createState() => _CreatePostScreenState();
+}
+
+class _CreatePostScreenState extends State<CreatePostScreen> {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController contentController = TextEditingController();
+
+  void _submitPost() {
+    if (titleController.text.isEmpty || contentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please fill out all fields.")),
+      );
+      return;
+    }
+
+    final newPost = {
+      'author': 'You',
+      'title': titleController.text.trim(),
+      'content': contentController.text.trim(),
+      'likes': '0',
+      'comments': '0',
+    };
+
+    Navigator.pop(context, newPost); // ✅ Send post back to CommunityScreen
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1206,15 +1207,17 @@ class CreatePostScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            const TextField(
-              decoration: InputDecoration(
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
                 labelText: 'Title',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
-            const TextField(
-              decoration: InputDecoration(
+            TextField(
+              controller: contentController,
+              decoration: const InputDecoration(
                 labelText: 'Description',
                 border: OutlineInputBorder(),
               ),
@@ -1222,13 +1225,9 @@ class CreatePostScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                // Handle post submission
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Your post has been created!')),
-                );
-              },
-              child: const Text('Submit Post'),
+              onPressed: _submitPost,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              child: const Text('Submit Post', style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1236,6 +1235,7 @@ class CreatePostScreen extends StatelessWidget {
     );
   }
 }
+
 
 // ✅ Reusable Dashboard Card widget
 class _DashboardCard extends StatelessWidget {
