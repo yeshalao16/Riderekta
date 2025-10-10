@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'Admin.dart';  // Import Admin.dart file
 
 void main() {
-  runApp(const RiderektaApp());
+  // For development or testing purposes, you can set this to `true` to load the Admin Dashboard.
+  bool isAdminMode = true;
+
+  if (isAdminMode) {
+    runApp(MyApp());  // Runs AdminDashboard if isAdminMode is true
+  } else {
+    runApp(const RiderektaApp());  // Runs the original RiderektaApp if isAdminMode is false
+  }
 }
+
 
 class RiderektaApp extends StatelessWidget {
   const RiderektaApp({super.key});
