@@ -8,11 +8,11 @@ import 'RouteHistoryScreen.dart';
 
 
 // API endpoint
-const String apiUrl = "http://192.168.254.116/riderekta/login.php";
-const String registerUrl = "http://192.168.254.116/riderekta/register.php";
-const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
-const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
-const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
+const String apiUrl = "http://10.0.2.2/riderekta/login.php";
+const String registerUrl = "http://10.0.2.2/riderekta/register.php";
+const String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
+const String createPostUrl = "http://10.0.2.2/riderekta/create_post.php";
+const String getPostsUrl = "http://10.0.2.2/riderekta/get_posts.php";
 
 
 
@@ -293,8 +293,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
   bool privacy = true;
 
-  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
-  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+  final String getUserUrl = "http://10.0.2.2/riderekta/get_user.php";
+  final String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
 
   @override
   void initState() {
