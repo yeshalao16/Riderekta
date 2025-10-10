@@ -142,7 +142,6 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       body: SafeArea(
         child: Column(
           children: [
-            // TabBar for top tabs
             TabBar(
               controller: _tabController,
               tabs: const [
@@ -154,7 +153,6 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
               unselectedLabelColor: Colors.grey,
               indicatorColor: Colors.deepPurple,
             ),
-            // TabBarView for corresponding content
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -168,13 +166,10 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           ],
         ),
       ),
-      // Bottom Navigation Bar for 'Start Route', 'Route History', 'Community'
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0, // Initially set to 'Start Route'
+        currentIndex: 0,
         onTap: (index) {
           setState(() {
-            // Set the index for the bottom tabs
-            // You can implement navigation for each tab here
             switch (index) {
               case 0:
                 Navigator.push(
@@ -200,15 +195,15 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.directions_bike),
-            label: 'Start Route', // First Tab
+            label: 'Start Route',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history),
-            label: 'Route History', // Second Tab
+            label: 'Route History',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.forum),
-            label: 'Community', // Third Tab
+            label: 'Community',
           ),
         ],
       ),
@@ -259,7 +254,6 @@ class RouteSafetyScreen extends StatelessWidget {
       subtitle: Text('Type: $routeType'),
       trailing: Text('Risk: $riskLevel', style: TextStyle(color: _getRiskColor(riskLevel))),
       onTap: () {
-        // Simulate real-time risk update
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Updating real-time risk for $routeName')),
         );
@@ -280,7 +274,6 @@ class RouteSafetyScreen extends StatelessWidget {
     }
   }
 }
-
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -328,7 +321,6 @@ class CommunityScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  // Community Post 1
                   Card(
                     elevation: 3,
                     shape: RoundedRectangleBorder(
@@ -378,83 +370,12 @@ class CommunityScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Community Post 2
-                  Card(
-                    elevation: 3,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundImage: AssetImage('assets/profile.jpg'),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'CommuteKing',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Any Group Rides This Weekend?',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Looking for any group rides happening this weekend! Let me know if anyone is interested...',
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: const [
-                              Icon(Icons.thumb_up_alt, size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
-                              Text('30'),
-                              SizedBox(width: 16),
-                              Icon(Icons.comment, size: 16, color: Colors.grey),
-                              SizedBox(width: 4),
-                              Text('7'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Bottom Action Button (Contact Us, Create Post)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
                   ElevatedButton(
                     onPressed: () {
-                      // Navigate to 'Contact Us' screen or show a dialog
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('Contact Us'),
-                            content: const Text('Email us at support@riderekta.com for assistance.'),
-                            actions: <Widget>[
-                              TextButton(
-                                child: const Text('OK'),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              ),
-                            ],
-                          );
-                        },
+                      // Navigate to 'Contact Us' screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ContactUsScreen()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -469,26 +390,6 @@ class CommunityScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.white),
                     ),
                   ),
-                  ElevatedButton(
-                    onPressed: () {
-                      // Navigate to 'Create Post' screen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const CreatePostScreen()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Create a Post',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -499,40 +400,56 @@ class CommunityScreen extends StatelessWidget {
   }
 }
 
-class CreatePostScreen extends StatelessWidget {
-  const CreatePostScreen({super.key});
+// New ContactUsScreen class
+class ContactUsScreen extends StatelessWidget {
+  const ContactUsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Post')),
+      appBar: AppBar(
+        title: const Text('Contact Us'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(),
-              ),
+            const Text(
+              'Name',
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
+            const TextField(),
             const SizedBox(height: 16),
+            const Text(
+              'Surname',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(),
+            const SizedBox(height: 16),
+            const Text(
+              'Email',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(),
+            const SizedBox(height: 16),
+            const Text(
+              'Message',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
             const TextField(
-              decoration: InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 5,
+              maxLines: 4,
             ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
-                // Handle post submission
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Your post has been created!')),
+                  const SnackBar(content: Text("Your message has been sent!")),
                 );
               },
-              child: const Text('Submit Post'),
+              child: const Text('Submit'),
             ),
           ],
         ),
