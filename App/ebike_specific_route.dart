@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'RouteHistoryScreen.dart';
 
 class EBikeSpecificRouteScreen extends StatefulWidget {
   const EBikeSpecificRouteScreen({super.key});
@@ -15,18 +17,63 @@ class EBikeSpecificRouteScreen extends StatefulWidget {
 
 class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   final MapController _mapController = MapController();
+
   LatLng? startLocation;
   LatLng? dropOffLocation;
   List<LatLng> routePoints = [];
-  final List<Marker> markers = [];
+
+  String? distanceText;
+  String? durationText;
+
   bool isLoadingRoute = false;
 
-  // 🧭 Get user's current location
+  final TextEditingController _startController = TextEditingController();
+  final TextEditingController _endController = TextEditingController();
+
+  List<Map<String, dynamic>> _startSuggestions = [];
+  List<Map<String, dynamic>> _endSuggestions = [];
+
+  // 🌍 Fetch autocomplete suggestions
+  Future<List<Map<String, dynamic>>> _fetchSuggestions(String query) async {
+    if (query.isEmpty) return [];
+    final url =
+        "https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=5";
+    final response = await http.get(Uri.parse(url), headers: {
+      'User-Agent': 'flutter-ebike-app',
+    });
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return List<Map<String, dynamic>>.from(data);
+    }
+    return [];
+  }
+
+  // 🔍 When a suggestion is tapped
+  void _onSuggestionTap(Map<String, dynamic> place, bool isStart) {
+    final lat = double.parse(place['lat']);
+    final lon = double.parse(place['lon']);
+    final location = LatLng(lat, lon);
+    setState(() {
+      if (isStart) {
+        startLocation = location;
+        _startController.text = place['display_name'];
+        _startSuggestions = [];
+      } else {
+        dropOffLocation = location;
+        _endController.text = place['display_name'];
+        _endSuggestions = [];
+      }
+    });
+    if (startLocation != null && dropOffLocation != null) {
+      _showEBikeRoute();
+    }
+  }
+
+  // 🧭 Get current user location
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // Check if location service is enabled
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -35,7 +82,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       return;
     }
 
-    // Check permission
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
@@ -43,227 +89,244 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     }
     if (permission == LocationPermission.deniedForever) return;
 
-    // Get position
-    Position position = await Geolocator.getCurrentPosition();
+    final pos = await Geolocator.getCurrentPosition();
+    final loc = LatLng(pos.latitude, pos.longitude);
+
     setState(() {
-      startLocation = LatLng(position.latitude, position.longitude);
-      markers.clear();
-      markers.add(
-        Marker(
-          point: startLocation!,
-          width: 50,
-          height: 50,
-          child: const Icon(Icons.pedal_bike, color: Colors.deepPurple, size: 35),
-        ),
-      );
+      startLocation = loc;
+      _startController.text = "📍 My Current Location";
+      _startSuggestions = [];
     });
 
-    _mapController.move(startLocation!, 15);
+    _mapController.move(loc, 15);
   }
 
-  // 🗺️ Select drop-off location
-  void _selectDropOff(LatLng pos) {
+  // 📍 User taps destination
+  void _onMapTap(LatLng pos) {
     if (startLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please set your starting location first!')),
+        const SnackBar(content: Text('Set your starting location first!')),
       );
       return;
     }
 
     setState(() {
       dropOffLocation = pos;
-      markers.removeWhere((m) => m.child is Icon && (m.child as Icon).icon == Icons.flag);
-      markers.add(
-        Marker(
-          point: pos,
-          width: 50,
-          height: 50,
-          child: const Icon(Icons.flag, color: Colors.red, size: 35),
-        ),
-      );
     });
-
     _showEBikeRoute();
   }
 
+  // 🚲 Fetch OSRM route
   Future<void> _showEBikeRoute() async {
     if (startLocation == null || dropOffLocation == null) return;
 
     setState(() {
       isLoadingRoute = true;
       routePoints.clear();
+      distanceText = null;
+      durationText = null;
     });
 
     try {
-      const apiKey =
-          "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImQ5Mzc3MjVkZjY3ZTRhNjI5MGEyZGEzOGQxZTA0Zjc5IiwiaCI6Im11cm11cjY0In0=";
-
+      final start = "${startLocation!.longitude},${startLocation!.latitude}";
+      final end = "${dropOffLocation!.longitude},${dropOffLocation!.latitude}";
       final url = Uri.parse(
-          "https://api.openrouteservice.org/v2/directions/cycling-electric");
+          "https://router.project-osrm.org/route/v1/bike/$start;$end?overview=full&geometries=geojson");
 
-      final body = jsonEncode({
-        "coordinates": [
-          [startLocation!.longitude, startLocation!.latitude],
-          [dropOffLocation!.longitude, dropOffLocation!.latitude],
-        ]
-      });
-
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': apiKey,
-        },
-        body: body,
-      );
-
-      debugPrint("ORS response code: ${response.statusCode}");
-      debugPrint("ORS response body: ${response.body}");
-
+      final response = await http.get(url);
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final List coords = data["features"][0]["geometry"]["coordinates"];
-        setState(() {
-          routePoints = coords
-              .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
-              .toList();
-        });
-        _mapController.fitCamera(CameraFit.bounds(
-          bounds: LatLngBounds.fromPoints([startLocation!, dropOffLocation!]),
-          padding: const EdgeInsets.all(50),
-        ));
+        final data = jsonDecode(response.body);
+        if (data["routes"] != null && data["routes"].isNotEmpty) {
+          final route = data["routes"][0];
+          final coords = route["geometry"]["coordinates"];
+          final distance = route["distance"] / 1000; // meters → km
+          final duration = route["duration"] / 60; // seconds → minutes
+
+          setState(() {
+            routePoints = coords
+                .map<LatLng>((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
+                .toList();
+            distanceText = "${distance.toStringAsFixed(2)} km";
+            durationText = "${duration.toStringAsFixed(0)} min";
+          });
+
+          _mapController.fitCamera(CameraFit.bounds(
+            bounds: LatLngBounds.fromPoints([startLocation!, dropOffLocation!]),
+            padding: const EdgeInsets.all(50),
+          ));
+
+          await _saveRouteToHistory(distance, duration);
+        } else {
+          _handleRouteError();
+        }
       } else {
         _handleRouteError();
       }
     } catch (e) {
-      debugPrint("Exception while fetching route: $e");
+      debugPrint("Route error: $e");
       _handleRouteError();
+    } finally {
+      setState(() => isLoadingRoute = false);
     }
-
-    setState(() {
-      isLoadingRoute = false;
-    });
   }
-
-
 
   void _handleRouteError() {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Failed to fetch route. Try again!')),
+      const SnackBar(content: Text("Failed to fetch route")),
     );
+  }
+
+  // 💾 Save route history
+  Future<void> _saveRouteToHistory(double distance, double duration) async {
+    try {
+      String startName = await _reverseGeocode(startLocation!);
+      String endName = await _reverseGeocode(dropOffLocation!);
+
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString('route_history');
+      List<Map<String, dynamic>> routes =
+      stored != null ? List<Map<String, dynamic>>.from(json.decode(stored)) : [];
+
+      routes.insert(0, {
+        'startName': startName,
+        'endName': endName,
+        'distance': distance.toStringAsFixed(2),
+        'duration': duration.toStringAsFixed(0),
+        'timestamp': DateTime.now().toString(),
+      });
+
+      if (routes.length > 20) routes = routes.sublist(0, 20);
+      await prefs.setString('route_history', json.encode(routes));
+    } catch (e) {
+      debugPrint("Save history error: $e");
+    }
+  }
+
+  Future<String> _reverseGeocode(LatLng location) async {
+    final url =
+        "https://nominatim.openstreetmap.org/reverse?lat=${location.latitude}&lon=${location.longitude}&format=json";
+    final response = await http.get(Uri.parse(url), headers: {
+      'User-Agent': 'flutter-ebike-app',
+    });
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data["display_name"] ?? "Unknown location";
+    }
+    return "Unknown location";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "E-BIKE SPECIFIC ROUTE",
-          style: TextStyle(color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        centerTitle: true,
+        title: const Text("E-Bike Route Finder"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const RouteHistoryScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
-          Expanded(
-            child: Stack(
+          // Search + Button
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
               children: [
-                FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: const LatLng(14.5995, 120.9842),
-                    initialZoom: 13,
-                    onTap: (_, pos) => _selectDropOff(pos),
-                  ),
-                  children: [
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.example.ebikeapp',
-                    ),
-                    PolylineLayer(
-                      polylines: [
-                        if (startLocation != null && dropOffLocation != null)
-                          Polyline(
-                            points: [startLocation!, dropOffLocation!],
-                            strokeWidth: 4,
-                            color: Colors.grey,
-                          ),
-                        if (routePoints.isNotEmpty)
-                          Polyline(
-                            points: routePoints,
-                            strokeWidth: 8,
-                            color: Colors.white.withOpacity(0.5),
-                          ),
-                        if (routePoints.isNotEmpty)
-                          Polyline(
-                            points: routePoints,
-                            strokeWidth: 6,
-                            color: Colors.deepPurple,
-                          ),
-                      ],
-                    ),
-
-                    MarkerLayer(markers: markers),
-                  ],
+                _buildSearchField(
+                  controller: _startController,
+                  hint: "Enter starting point or use current location",
+                  onChanged: (v) async {
+                    final results = await _fetchSuggestions(v);
+                    setState(() => _startSuggestions = results);
+                  },
+                  suggestions: _startSuggestions,
+                  isStart: true,
                 ),
-                if (isLoadingRoute)
-                  const Center(
-                    child: CircularProgressIndicator(color: Colors.deepPurple),
+                _buildSearchField(
+                  controller: _endController,
+                  hint: "Enter destination or tap map",
+                  onChanged: (v) async {
+                    final results = await _fetchSuggestions(v);
+                    setState(() => _endSuggestions = results);
+                  },
+                  suggestions: _endSuggestions,
+                  isStart: false,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _getCurrentLocation,
+                  icon: const Icon(Icons.my_location),
+                  label: const Text("Use My Current Location"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
                   ),
+                ),
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
+
+          if (isLoadingRoute) const LinearProgressIndicator(),
+
+          if (distanceText != null && durationText != null)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                "🚴 Distance: $distanceText | ⏱ Duration: $durationText",
+                style:
+                const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+
+          // Map
+          Expanded(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: const LatLng(14.5995, 120.9842),
+                initialZoom: 13,
+                onTap: (_, pos) => _onMapTap(pos),
+              ),
               children: [
-                if (startLocation == null)
-                  const Text(
-                    "Press 'Start' to use your current location, then tap the map for drop-off.",
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                if (startLocation != null && dropOffLocation == null)
-                  const Text(
-                    "Tap the map to select drop-off (e-bike route will appear automatically!)",
-                    style: TextStyle(fontSize: 14, color: Colors.green, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                if (routePoints.isNotEmpty)
-                  const Text(
-                    "✅ Route ready! Follow the purple dashed line for e-bike safe path.",
-                    style: TextStyle(fontSize: 14, color: Colors.deepPurple, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _getCurrentLocation,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurple,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        icon: const Icon(Icons.location_on, color: Colors.white),
-                        label: const Text("Start", style: TextStyle(color: Colors.white, fontSize: 16)),
-                      ),
+                TileLayer(
+                  urlTemplate:
+                  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                  subdomains: const ['a', 'b', 'c'],
+                ),
+                PolylineLayer(
+                  polylines: [
+                    Polyline(
+                      points: routePoints,
+                      strokeWidth: 5.0,
+                      color: Colors.deepPurple,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed:
-                        dropOffLocation == null ? null : () => _showEBikeRoute(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.deepPurpleAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        label: const Text("Refresh Route",
-                            style: TextStyle(color: Colors.white, fontSize: 16)),
+                  ],
+                ),
+                MarkerLayer(
+                  markers: [
+                    if (startLocation != null)
+                      Marker(
+                        point: startLocation!,
+                        width: 40,
+                        height: 40,
+                        child: const Icon(Icons.electric_bike,
+                            color: Colors.green, size: 40),
                       ),
-                    ),
+                    if (dropOffLocation != null)
+                      Marker(
+                        point: dropOffLocation!,
+                        width: 40,
+                        height: 40,
+                        child:
+                        const Icon(Icons.flag, color: Colors.red, size: 40),
+                      ),
                   ],
                 ),
               ],
@@ -271,6 +334,72 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  // Custom small dropdown UI
+  Widget _buildSearchField({
+    required TextEditingController controller,
+    required String hint,
+    required Function(String) onChanged,
+    required List<Map<String, dynamic>> suggestions,
+    required bool isStart,
+  }) {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                hintText: hint,
+                prefixIcon: Icon(
+                    isStart ? Icons.electric_bike_outlined : Icons.flag),
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: onChanged,
+            ),
+            const SizedBox(height: 5),
+          ],
+        ),
+        if (suggestions.isNotEmpty)
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 55,
+            child: Container(
+              constraints: const BoxConstraints(maxHeight: 150),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: suggestions.length,
+                itemBuilder: (context, index) {
+                  final s = suggestions[index];
+                  return ListTile(
+                    dense: true,
+                    title: Text(
+                      s['display_name'],
+                      style: const TextStyle(fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
+                    onTap: () => _onSuggestionTap(s, isStart),
+                  );
+                },
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
