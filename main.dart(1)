@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter_application_1/ebike_specific_route.dart';
+
+
 
 // API endpoint
 const String apiUrl = "http://10.0.2.2/riderekta/login.php";
@@ -284,20 +287,6 @@ class RouteHistoryScreen extends StatelessWidget {
   }
 }
 
-class SpecificRouteScreen extends StatelessWidget {
-  const SpecificRouteScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("E-Bike Specific Route")),
-      body: const Center(
-        child: Text("Plan a specific e-bike route here.", style: TextStyle(fontSize: 16)),
-      ),
-    );
-  }
-}
-
 
 // ✅ Updated Settings Screen with Editable Fields
 class SettingsScreen extends StatefulWidget {
@@ -315,8 +304,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
   bool privacy = true;
 
-  final String getUserUrl = "http://10.0.2.2/riderekta/get_user.php";
-  final String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
+  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
+  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
 
   @override
   void initState() {
@@ -692,7 +681,7 @@ class _UserDashboardState extends State<UserDashboard> {
       case 'specific':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const SpecificRouteScreen()),
+          MaterialPageRoute(builder: (context) => const EBikeSpecificRouteScreen()),
         );
         break;
       case 'safety':
@@ -859,7 +848,7 @@ class _UserDashboardState extends State<UserDashboard> {
               case 0:
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SpecificRouteScreen()),
+                  MaterialPageRoute(builder: (context) => const EBikeSpecificRouteScreen()),
                 );
                 break;
               case 1:
