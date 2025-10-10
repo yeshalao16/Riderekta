@@ -1,0 +1,1502 @@
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:flutter_application_1/ebike_specific_route.dart';
+import 'admin.dart';
+import 'RouteHistoryScreen.dart';
+
+
+
+// API endpoint
+const String apiUrl = "http://192.168.254.116/riderekta/login.php";
+const String registerUrl = "http://192.168.254.116/riderekta/register.php";
+const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
+const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
+
+
+
+void main() {
+  runApp(const RiderektaApp());
+}
+
+class RiderektaApp extends StatelessWidget {
+  const RiderektaApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Riderekta',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      home: const MainScreen(),
+      debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
+  @override
+  State<MainScreen> createState() => _MainScreenState();
+}
+
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFFFF),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: const Text(
+          'Home Page',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: true,
+
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
+              'Login',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'About'),
+                Tab(text: 'Team'),
+                Tab(text: 'Benefits'),
+              ],
+              labelColor: Colors.deepPurple,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Colors.deepPurple,
+            ),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: const [
+                  AboutScreen(key: ValueKey('about')),
+                  OurTeamScreen(key: ValueKey('team')),
+                  BenefitsScreen(key: ValueKey('benefits')),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AboutScreen extends StatelessWidget {
+  const AboutScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double horizontalPadding = 16.0;
+    final double containerMargin = 4.0;
+    final double spacing = 8.0;
+    final double totalHorizontal = (horizontalPadding * 2) + (containerMargin * 2) + spacing;
+    final double imageWidth = (screenWidth - totalHorizontal) / 2;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          const SizedBox(height: 30),
+          const Text(
+            "RIDEREKTA",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 28,
+              color: Colors.deepPurple,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Subtitle",
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF7FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFCAC4D0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 4,
+                  offset: Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Image.asset(
+                    'assets/ebike1.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.cover,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Eco-Friendly Navigation',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Get safe and legal e-bike routes that avoid highways and unsafe roads.',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 12.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: Image.asset(
+                    'assets/ebike2.png',
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Image.asset(
+                    'assets/ebike3.png',
+                    height: 100,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0),
+            child: Text(
+              'Continuous Improvement: Give feedback directly and help us improve Riderekta for everyone.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class OurTeamScreen extends StatelessWidget {
+  const OurTeamScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        "Meet our awesome team!",
+        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+}
+
+class BenefitsScreen extends StatelessWidget {
+  const BenefitsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        "Enjoy the benefits of safe, eco-friendly e-bike navigation.",
+        style: TextStyle(fontSize: 16),
+      ),
+    );
+  }
+}
+
+
+
+// ✅ Updated Settings Screen with Editable Fields
+class SettingsScreen extends StatefulWidget {
+  final String email;
+  const SettingsScreen({super.key, required this.email});
+
+  @override
+  _SettingsScreenState createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController mobileController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  bool notifications = true;
+  bool privacy = true;
+
+  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
+  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData(); // Load data when the screen opens
+  }
+
+  Future<void> _fetchUserData() async {
+    try {
+      final response = await http.post(
+        Uri.parse(getUserUrl),
+        body: {"email": widget.email},
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        final user = data["user"];
+        setState(() {
+          emailController.text = user["email"];
+          mobileController.text = user["mobile"] ?? '';
+          passwordController.text = user["password"];
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("⚠️ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    try {
+      final response = await http.post(
+        Uri.parse(updateProfileUrl),
+        body: {
+          "email": emailController.text.trim(),
+          "mobile": mobileController.text.trim(),
+          "password": passwordController.text.trim(),
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Profile updated successfully")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+  void _toggleNotifications(bool value) {
+    setState(() => notifications = value);
+  }
+
+  void _togglePrivacy(bool value) {
+    setState(() => privacy = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("User Profile & Settings")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const Text("Edit Profile", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              TextField(
+                controller: emailController,
+                enabled: false,  // Prevents typing and interaction
+                decoration: const InputDecoration(
+                    labelText: "Email",
+                    suffixIcon: Icon(Icons.lock, color: Colors.grey)
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: mobileController,
+                decoration: const InputDecoration(labelText: "Mobile Number"),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: "Password"),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _saveProfile,
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 40),
+              const Text("App Settings", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              SwitchListTile(
+                title: const Text("Enable Notifications"),
+                value: notifications,
+                onChanged: _toggleNotifications,
+              ),
+              SwitchListTile(
+                title: const Text("Accept Privacy Policy"),
+                value: privacy,
+                onChanged: _togglePrivacy,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+  Future<void> login() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    // Simple admin login check first
+    if (email == 'admin@admin.com' && password == 'admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Admin login successful!")),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AdminDashboard()),
+      );
+      return;
+    }
+
+    // Otherwise, proceed with user login
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: {
+          "email": email,
+          "password": password,
+        },
+      );
+
+      print("Response: ${response.body}");
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Login successful!")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserDashboard(email: email),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Login")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: login,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+              ),
+              child: const Text(
+                "Login",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RegisterScreen(),
+                  ),
+                );
+              },
+              child: const Text(
+                "Don't have an account? Sign Up",
+                style: TextStyle(color: Colors.deepPurple),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true; // Toggle for password visibility
+
+  Future<void> register() async {
+    try {
+      final response = await http.post(
+        Uri.parse(registerUrl),
+        body: {
+          "name": _nameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "mobile": _mobileController.text.trim(),
+          "password": _passwordController.text.trim(),
+        },
+      );
+
+      print("Register Response: ${response.body}");
+      final data = jsonDecode(response.body);
+
+      if (data["success"]) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Registration successful!")),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Sign Up")),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: "Full Name",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _mobileController,
+              decoration: InputDecoration(
+                labelText: "Mobile Number",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _passwordController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: register,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+              ),
+              child: const Text(
+                "Sign Up",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// After successful login
+// Updated User Dashboard Page with bottom navigation bar
+class UserDashboard extends StatefulWidget {
+  final String email; // email passed from login
+  const UserDashboard({super.key, required this.email});
+
+  @override
+  State<UserDashboard> createState() => _UserDashboardState();
+}
+
+class _UserDashboardState extends State<UserDashboard> {
+  int selectedIndex = 0;
+
+  void _handleMenuSelection(String value) {
+    switch (value) {
+      case 'recent':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RouteHistoryScreen()),
+        );
+        break;
+      case 'specific':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const EBikeSpecificRouteScreen()),
+        );
+        break;
+      case 'safety':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RouteSafetyScreen()),
+        );
+        break;
+      case 'settings':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SettingsScreen(email: widget.email),
+          ),
+        );
+        break;
+    }
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required int index,
+  }) {
+    final bool selected = index == selectedIndex;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedIndex = index;
+        });
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: selected ? Colors.deepPurple : Colors.grey),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: selected ? Colors.deepPurple : Colors.grey,
+              fontSize: 12,
+              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final username = widget.email.split('@')[0]; // Extract username before '@'
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Row(
+          children: [
+            // 🔹 Popup menu
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.menu, color: Colors.black),
+              color: const Color(0xFFFEF7FF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              onSelected: _handleMenuSelection,
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'recent', child: Text('RECENT ROUTE HISTORY')),
+                PopupMenuItem(value: 'specific', child: Text('E-BIKE SPECIFIC ROUTE')),
+                PopupMenuItem(value: 'safety', child: Text('E-BIKE ROUTE SAFETY')),
+                PopupMenuItem(value: 'settings', child: Text('SETTINGS')),
+              ],
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FeedbackRequestScreen()),
+                );
+              },
+              child: Row(
+                children: const [
+                  Text(
+                    "Feedback & Reqs",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.emoji_emotions_outlined,
+                      color: Colors.deepPurple, size: 18),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.deepPurple,
+              child: Icon(Icons.person, size: 50, color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Welcome Back,",
+              style: TextStyle(fontSize: 20, color: Colors.grey[700]),
+            ),
+            Text(
+              "$username!",
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple,
+              ),
+            ),
+            const SizedBox(height: 25),
+            Expanded(
+              child: GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 1.2,
+                children: const [
+                  _DashboardCard(title: "Total Rides", body: "Review body"),
+                  _DashboardCard(title: "Distance Traveled", body: "Review body"),
+                  _DashboardCard(title: "Review title", body: "Review body"),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      // Bottom Navigation Bar
+      bottomNavigationBar: BottomNavigationBar(
+          currentIndex: 0, // Initially set to 'Start Route'
+          onTap: (index) {
+            setState(() {
+              // Set the index for the bottom tabs
+              // You can implement navigation for each tab here
+              switch (index) {
+                case 0:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const EBikeSpecificRouteScreen()),
+                  );
+                  break;
+                case 1:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const RouteHistoryScreen()),
+                  );
+                  break;
+                case 2:
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CommunityScreen(username: username),
+                    ),
+                  );
+                  break;
+
+              }
+            });
+          },
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.directions_bike),
+              label: 'Start Route', // First Tab
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.history),
+              label: 'Route History', // Second Tab
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.forum),
+              label: 'Community', // Third Tab
+
+            ),
+          ]
+      ),
+    );
+  }
+}
+
+class FeedbackRequestScreen extends StatefulWidget {
+  const FeedbackRequestScreen({super.key});
+
+  @override
+  State<FeedbackRequestScreen> createState() => _FeedbackRequestScreenState();
+}
+
+class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
+  bool allowContact = false; // This will manage the state of the toggle switch
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Feedback & Request'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Type',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text("I have a suggestion"),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text("I found a bug"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Your Message',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              decoration: InputDecoration(hintText: 'Please describe your feedback or request...'),
+              maxLines: 5,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Attach File (Optional)',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              decoration: InputDecoration(hintText: 'Attach any relevant file here'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Allow us to contact you'),
+                Switch(
+                  value: allowContact,
+                  onChanged: (bool value) {
+                    setState(() {
+                      allowContact = value; // Update the state when the toggle changes
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Your feedback has been submitted!")),
+                );
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RouteSafetyScreen extends StatelessWidget {
+  const RouteSafetyScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("E-Bike Route Safety")),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Text(
+                "Safe Paths",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Text(
+              "Dedicated Cycling Lanes, Low-Traffic Roads",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildSafeRouteTile(context, 'Safe Commuter Path', 'Dedicated Cycling Lane', 'Low'),
+                  _buildSafeRouteTile(context, 'Downtown E-Bike Lane', 'Low-Traffic Road', 'Medium'),
+                  _buildSafeRouteTile(context, 'Riverside Path', 'Dedicated Cycling Lane', 'Low'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSafeRouteTile(BuildContext context, String routeName, String routeType, String riskLevel) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      title: Text(routeName, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text('Type: $routeType'),
+      trailing: Text('Risk: $riskLevel', style: TextStyle(color: _getRiskColor(riskLevel))),
+      onTap: () {
+        // Simulate real-time risk update
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Updating real-time risk for $routeName')),
+        );
+      },
+    );
+  }
+
+  Color _getRiskColor(String riskLevel) {
+    switch (riskLevel) {
+      case 'Low':
+        return Colors.green;
+      case 'Medium':
+        return Colors.orange;
+      case 'High':
+        return Colors.red;
+      default:
+        return Colors.black;
+    }
+  }
+}
+
+class CommunityScreen extends StatefulWidget {
+  final String username; // passed from dashboard
+  const CommunityScreen({super.key, required this.username});
+
+  @override
+  State<CommunityScreen> createState() => _CommunityScreenState();
+}
+
+class _CommunityScreenState extends State<CommunityScreen> {
+  List<Map<String, dynamic>> posts = [
+    {
+      'author': 'Jane Doe',
+      'title': 'Best E-Bike Routes in Manila?',
+      'content':
+      'Hey everyone! Just got a new e-bike and looking for recommendations on the best routes in Manila...',
+      'likes': '45',
+      'comments': '12',
+    },
+    {
+      'author': 'CommuteKing',
+      'title': 'Any Group Rides This Weekend?',
+      'content':
+      'Looking for any group rides happening this weekend! Let me know if anyone is interested...',
+      'likes': '30',
+      'comments': '7',
+    },
+  ];
+
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  Future<void> _fetchPosts() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await http.get(Uri.parse(getPostsUrl));
+      final data = jsonDecode(response.body);
+
+      if (data["success"] == true && data["posts"] != null) {
+        final backendPosts =
+        List<Map<String, dynamic>>.from(data["posts"] as List);
+        setState(() {
+          posts = [...backendPosts, ...posts];
+        });
+      }
+    } catch (e) {
+      print("Fetch error: $e");
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  void _addNewPost(Map<String, dynamic> newPost) {
+    setState(() {
+      posts.insert(0, newPost);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Community and Forums',
+          style: TextStyle(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _fetchPosts,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search Topics",
+                      filled: true,
+                      fillColor: const Color(0xFFFEF7FF),
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (isLoading)
+                    const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(),
+                    )
+                  else
+                    ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: posts.length,
+                      itemBuilder: (context, index) {
+                        final post = posts[index];
+                        return Card(
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const CircleAvatar(
+                                      radius: 20,
+                                      backgroundImage:
+                                      AssetImage('assets/profile.jpg'),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      post['author'] ?? 'Anonymous',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  post['title'] ?? '',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(post['content'] ?? ''),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.thumb_up_alt,
+                                        size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(post['likes'] ?? '0'),
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.comment,
+                                        size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(post['comments'] ?? '0'),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
+                  // ✅ SIDE-BY-SIDE BUTTONS
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.add, color: Colors.white),
+                          label: const Text(
+                            "Create a Post",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onPressed: () async {
+                            final newPost =
+                            await Navigator.push<Map<String, dynamic>>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    CreatePostScreen(username: widget.username),
+                              ),
+                            );
+                            if (newPost != null) {
+                              _addNewPost(newPost);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.email, color: Colors.white),
+                          label: const Text(
+                            'Contact Us',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ContactUsScreen(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.deepPurple,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class CreatePostScreen extends StatefulWidget {
+  final String username;
+  const CreatePostScreen({super.key, required this.username});
+
+  @override
+  State<CreatePostScreen> createState() => _CreatePostScreenState();
+}
+
+class _CreatePostScreenState extends State<CreatePostScreen> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+  bool _isAnonymous = false;
+  bool _isPosting = false;
+
+  Future<void> _submitPost() async {
+    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all fields")),
+      );
+      return;
+    }
+
+    setState(() => _isPosting = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(createPostUrl),
+        body: {
+          "author": _isAnonymous ? "Anonymous" : widget.username,
+          "title": _titleController.text.trim(),
+          "content": _contentController.text.trim(),
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (data["success"]) {
+        Navigator.pop(context, {
+          "author": _isAnonymous ? "Anonymous" : widget.username,
+          "title": _titleController.text,
+          "content": _contentController.text,
+          "likes": "0",
+          "comments": "0",
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error posting: $e")),
+      );
+    } finally {
+      setState(() => _isPosting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("Create Post")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: const InputDecoration(
+                labelText: "Title",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _contentController,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                labelText: "Content",
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Post as Anonymous"),
+                Switch(
+                  value: _isAnonymous,
+                  onChanged: (value) {
+                    setState(() => _isAnonymous = value);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _isPosting ? null : _submitPost,
+              style:
+              ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              child: _isPosting
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Post",
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ContactUsScreen extends StatelessWidget {
+  const ContactUsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Contact Us'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Name',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(),
+            const SizedBox(height: 16),
+            const Text(
+              'Surname',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(),
+            const SizedBox(height: 16),
+            const Text(
+              'Email',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(),
+            const SizedBox(height: 16),
+            const Text(
+              'Message',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              maxLines: 4,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Your message has been sent!")),
+                );
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+// Reusable Dashboard Card widget
+class _DashboardCard extends StatelessWidget {
+  final String title;
+  final String body;
+  const _DashboardCard({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(body, style: const TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ),
+    );
+  }
+}
