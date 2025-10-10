@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'Admin.dart';  // Import Admin.dart file
 
+//API endpoint
+const String apiUrl = "http:// 192.168.1.19/riderekta/login.php";
+const String registerUrl = "http://192.168.1.19/riderekta/register.php";
+
+
+
 void main() {
   // For development or testing purposes, you can set this to `true` to load the Admin Dashboard.
-  bool isAdminMode = true;
+  bool isAdminMode = false;
 
   if (isAdminMode) {
     runApp(MyApp());  // Runs AdminDashboard if isAdminMode is true
