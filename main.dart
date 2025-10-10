@@ -69,6 +69,12 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           MaterialPageRoute(builder: (context) => const SettingsScreen()),
         );
         break;
+      case 'feedback':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const FeedbackRequestScreen()),
+        );
+        break;
     }
   }
 
@@ -110,6 +116,10 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
             const PopupMenuItem(
               value: 'settings',
               child: Text('SETTINGS'),
+            ),
+            const PopupMenuItem(
+              value: 'feedback',
+              child: Text('FEEDBACK & REQUEST'),
             ),
           ],
         ),
@@ -211,6 +221,95 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   }
 }
 
+class FeedbackRequestScreen extends StatefulWidget {
+  const FeedbackRequestScreen({super.key});
+
+  @override
+  State<FeedbackRequestScreen> createState() => _FeedbackRequestScreenState();
+}
+
+class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
+  bool allowContact = false; // This will manage the state of the toggle switch
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Feedback & Request'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Type',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text("I have a suggestion"),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text("I found a bug"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Your Message',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              decoration: InputDecoration(hintText: 'Please describe your feedback or request...'),
+              maxLines: 5,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Attach File (Optional)',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              decoration: InputDecoration(hintText: 'Attach any relevant file here'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Allow us to contact you'),
+                Switch(
+                  value: allowContact,
+                  onChanged: (bool value) {
+                    setState(() {
+                      allowContact = value; // Update the state when the toggle changes
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Your feedback has been submitted!")),
+                );
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Added missing classes
+
 class RouteSafetyScreen extends StatelessWidget {
   const RouteSafetyScreen({super.key});
 
@@ -218,60 +317,11 @@ class RouteSafetyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("E-Bike Route Safety")),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Text(
-                "Safe Paths",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const Text(
-              "Dedicated Cycling Lanes, Low-Traffic Roads",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildSafeRouteTile(context, 'Safe Commuter Path', 'Dedicated Cycling Lane', 'Low'),
-                  _buildSafeRouteTile(context, 'Downtown E-Bike Lane', 'Low-Traffic Road', 'Medium'),
-                  _buildSafeRouteTile(context, 'Riverside Path', 'Dedicated Cycling Lane', 'Low'),
-                ],
-              ),
-            ),
-          ],
-        ),
+      body: const Center(
+        child: Text("E-bike route safety details will appear here.",
+            style: TextStyle(fontSize: 16)),
       ),
     );
-  }
-
-  Widget _buildSafeRouteTile(BuildContext context, String routeName, String routeType, String riskLevel) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      title: Text(routeName, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text('Type: $routeType'),
-      trailing: Text('Risk: $riskLevel', style: TextStyle(color: _getRiskColor(riskLevel))),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Updating real-time risk for $routeName')),
-        );
-      },
-    );
-  }
-
-  Color _getRiskColor(String riskLevel) {
-    switch (riskLevel) {
-      case 'Low':
-        return Colors.green;
-      case 'Medium':
-        return Colors.orange;
-      case 'High':
-        return Colors.red;
-      default:
-        return Colors.black;
-    }
   }
 }
 
@@ -400,7 +450,6 @@ class CommunityScreen extends StatelessWidget {
   }
 }
 
-// New ContactUsScreen class
 class ContactUsScreen extends StatelessWidget {
   const ContactUsScreen({super.key});
 
@@ -457,6 +506,7 @@ class ContactUsScreen extends StatelessWidget {
     );
   }
 }
+
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
