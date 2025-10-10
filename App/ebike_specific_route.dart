@@ -19,91 +19,138 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   LatLng? dropOffLocation;
   List<LatLng> routePoints = [];
   final List<Marker> markers = [];
+  bool isLoadingRoute = false;
 
-  /// Get current GPS location
+  // 🧭 Get user's current location
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location service is enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enable location services")),
+        const SnackBar(content: Text('Please enable location services')),
       );
       return;
     }
 
-    LocationPermission permission = await Geolocator.checkPermission();
+    // Check permission
+    permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return;
     }
+    if (permission == LocationPermission.deniedForever) return;
 
-    if (permission == LocationPermission.deniedForever ||
-        permission == LocationPermission.denied) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Location permission denied")),
-      );
-      return;
-    }
-
-    Position position =
-    await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    // Get position
+    Position position = await Geolocator.getCurrentPosition();
     setState(() {
       startLocation = LatLng(position.latitude, position.longitude);
+      markers.clear();
       markers.add(
         Marker(
           point: startLocation!,
-          width: 60,
-          height: 60,
-          child: const Icon(Icons.location_pin, color: Colors.blue, size: 40),
+          width: 50,
+          height: 50,
+          child: const Icon(Icons.pedal_bike, color: Colors.deepPurple, size: 35),
         ),
       );
     });
 
-    _mapController.move(startLocation!, 14);
+    _mapController.move(startLocation!, 15);
   }
 
-  /// Tap to select drop-off
-  void _selectDropOff(LatLng position) {
+  // 🗺️ Select drop-off location
+  void _selectDropOff(LatLng pos) {
+    if (startLocation == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please set your starting location first!')),
+      );
+      return;
+    }
+
     setState(() {
-      dropOffLocation = position;
+      dropOffLocation = pos;
+      markers.removeWhere((m) => m.child is Icon && (m.child as Icon).icon == Icons.flag);
       markers.add(
         Marker(
-          point: dropOffLocation!,
-          width: 60,
-          height: 60,
-          child: const Icon(Icons.flag, color: Colors.red, size: 40),
+          point: pos,
+          width: 50,
+          height: 50,
+          child: const Icon(Icons.flag, color: Colors.red, size: 35),
         ),
       );
     });
-    _showRoute();
+
+    _showEBikeRoute();
   }
 
-  /// Use OpenRouteService (free, open-source) for biking route
-  Future<void> _showRoute() async {
+  Future<void> _showEBikeRoute() async {
     if (startLocation == null || dropOffLocation == null) return;
 
-    const apiKey = 'YOUR_OPENROUTESERVICE_API_KEY'; // optional free key
-    final url =
-        'https://api.openrouteservice.org/v2/directions/cycling-regular?api_key=$apiKey&start=${startLocation!.longitude},${startLocation!.latitude}&end=${dropOffLocation!.longitude},${dropOffLocation!.latitude}';
+    setState(() {
+      isLoadingRoute = true;
+      routePoints.clear();
+    });
 
     try {
-      final response = await http.get(Uri.parse(url));
+      const apiKey =
+          "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImQ5Mzc3MjVkZjY3ZTRhNjI5MGEyZGEzOGQxZTA0Zjc5IiwiaCI6Im11cm11cjY0In0=";
+
+      final url = Uri.parse(
+          "https://api.openrouteservice.org/v2/directions/cycling-electric");
+
+      final body = jsonEncode({
+        "coordinates": [
+          [startLocation!.longitude, startLocation!.latitude],
+          [dropOffLocation!.longitude, dropOffLocation!.latitude],
+        ]
+      });
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': apiKey,
+        },
+        body: body,
+      );
+
+      debugPrint("ORS response code: ${response.statusCode}");
+      debugPrint("ORS response body: ${response.body}");
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final coords = data['features'][0]['geometry']['coordinates'];
+        final List coords = data["features"][0]["geometry"]["coordinates"];
         setState(() {
           routePoints = coords
-              .map<LatLng>((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
+              .map((c) => LatLng(c[1].toDouble(), c[0].toDouble()))
               .toList();
         });
+        _mapController.fitCamera(CameraFit.bounds(
+          bounds: LatLngBounds.fromPoints([startLocation!, dropOffLocation!]),
+          padding: const EdgeInsets.all(50),
+        ));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Unable to fetch route")),
-        );
+        _handleRouteError();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error fetching route: $e")),
-      );
+      debugPrint("Exception while fetching route: $e");
+      _handleRouteError();
     }
+
+    setState(() {
+      isLoadingRoute = false;
+    });
+  }
+
+
+
+  void _handleRouteError() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to fetch route. Try again!')),
+    );
   }
 
   @override
@@ -120,61 +167,104 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       body: Column(
         children: [
           Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: LatLng(14.5995, 120.9842), // Manila default
-                initialZoom: 13,
-                onTap: (_, pos) => _selectDropOff(pos),
-              ),
+            child: Stack(
               children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.ebikeapp',
-                ),
-                PolylineLayer(
-                  polylines: [
-                    Polyline(
-                      points: routePoints,
-                      strokeWidth: 5,
-                      color: Colors.deepPurple,
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: const LatLng(14.5995, 120.9842),
+                    initialZoom: 13,
+                    onTap: (_, pos) => _selectDropOff(pos),
+                  ),
+                  children: [
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.ebikeapp',
                     ),
+                    PolylineLayer(
+                      polylines: [
+                        if (startLocation != null && dropOffLocation != null)
+                          Polyline(
+                            points: [startLocation!, dropOffLocation!],
+                            strokeWidth: 4,
+                            color: Colors.grey,
+                          ),
+                        if (routePoints.isNotEmpty)
+                          Polyline(
+                            points: routePoints,
+                            strokeWidth: 8,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                        if (routePoints.isNotEmpty)
+                          Polyline(
+                            points: routePoints,
+                            strokeWidth: 6,
+                            color: Colors.deepPurple,
+                          ),
+                      ],
+                    ),
+
+                    MarkerLayer(markers: markers),
                   ],
                 ),
-                MarkerLayer(markers: markers),
+                if (isLoadingRoute)
+                  const Center(
+                    child: CircularProgressIndicator(color: Colors.deepPurple),
+                  ),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _getCurrentLocation,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text("Start",
-                        style: TextStyle(color: Colors.white, fontSize: 16)),
+                if (startLocation == null)
+                  const Text(
+                    "Press 'Start' to use your current location, then tap the map for drop-off.",
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: dropOffLocation == null
-                        ? () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text("Tap on map to select drop-off")))
-                        : _showRoute,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurpleAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                    ),
-                    child: const Text("Drop-off",
-                        style: TextStyle(color: Colors.white, fontSize: 16)),
+                if (startLocation != null && dropOffLocation == null)
+                  const Text(
+                    "Tap the map to select drop-off (e-bike route will appear automatically!)",
+                    style: TextStyle(fontSize: 14, color: Colors.green, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
                   ),
+                if (routePoints.isNotEmpty)
+                  const Text(
+                    "✅ Route ready! Follow the purple dashed line for e-bike safe path.",
+                    style: TextStyle(fontSize: 14, color: Colors.deepPurple, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _getCurrentLocation,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: const Icon(Icons.location_on, color: Colors.white),
+                        label: const Text("Start", style: TextStyle(color: Colors.white, fontSize: 16)),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed:
+                        dropOffLocation == null ? null : () => _showEBikeRoute(),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurpleAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        label: const Text("Refresh Route",
+                            style: TextStyle(color: Colors.white, fontSize: 16)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
