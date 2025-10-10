@@ -35,12 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Hash password before saving
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    // WARNING: Storing passwords in plain text is a major security risk!
+    // In a real application, ALWAYS use password hashing (e.g., password_hash()).
+    // This is only for testing or educational purposes.
 
-    // Insert new user
+    // Insert new user (password stored in plain text)
     $insert = $conn->prepare("INSERT INTO users (name, email, mobile, password) VALUES (?, ?, ?, ?)");
-    $insert->bind_param("ssss", $name, $email, $mobile, $hashedPassword);
+    $insert->bind_param("ssss", $name, $email, $mobile, $password);
 
     if ($insert->execute()) {
         echo json_encode(["success" => true, "message" => "Registration successful"]);
