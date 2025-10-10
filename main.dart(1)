@@ -6,11 +6,11 @@ import 'package:flutter_application_1/ebike_specific_route.dart';
 
 
 // API endpoint
-const String apiUrl = "http://10.0.2.2/riderekta/login.php";
-const String registerUrl = "http://10.0.2.2/riderekta/register.php";
-const String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
-const String createPostUrl = "http://10.0.2.2/riderekta/create_post.php";
-const String getPostsUrl = "http://10.0.2.2/riderekta/get_posts.php";
+const String apiUrl = "http://192.168.254.116/riderekta/login.php";
+const String registerUrl = "http://192.168.254.116/riderekta/register.php";
+const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
+const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
 
 
 
@@ -304,8 +304,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
   bool privacy = true;
 
-  final String getUserUrl = ""http://10.0.2.2/riderekta/get_user.php";
-  final String updateProfileUrl = ""http://10.0.2.2/riderekta/update_profile.php";
+  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
+  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
 
   @override
   void initState() {
@@ -391,7 +391,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
               TextField(
                 controller: emailController,
-                decoration: const InputDecoration(labelText: "Email"),
+                enabled: false,  // Prevents typing and interaction
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  suffixIcon: Icon(Icons.lock, color: Colors.grey)
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -433,7 +437,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
-//  Login Screen
+//  Login Screen (Updated with password visibility toggle)
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -444,6 +448,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true; // Toggle for password visibility
 
   Future<void> login() async {
     try {
@@ -503,11 +508,21 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
-              obscureText: true,
+              obscureText: _obscurePassword,
               decoration: InputDecoration(
                 labelText: "Password",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
               ),
             ),
@@ -556,6 +571,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true; // Toggle for password visibility
 
   Future<void> register() async {
     try {
@@ -630,11 +646,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
-              obscureText: true,
+              obscureText: _obscurePassword,
               decoration: InputDecoration(
                 labelText: "Password",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                 ),
               ),
             ),
@@ -655,7 +681,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-
 
 // After successful login
 // Updated User Dashboard Page with bottom navigation bar
@@ -762,7 +787,7 @@ class _UserDashboardState extends State<UserDashboard> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FeedbackPage()),
+                  MaterialPageRoute(builder: (context) => const FeedbackRequestScreen()),
                 );
               },
               child: Row(
@@ -889,18 +914,87 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 }
 
-// ✅ Simple Feedback Page Placeholder
-class FeedbackPage extends StatelessWidget {
-  const FeedbackPage({super.key});
+class FeedbackRequestScreen extends StatefulWidget {
+  const FeedbackRequestScreen({super.key});
+
+  @override
+  State<FeedbackRequestScreen> createState() => _FeedbackRequestScreenState();
+}
+
+class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
+  bool allowContact = false; // This will manage the state of the toggle switch
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Feedback & Requests")),
-      body: const Center(
-        child: Text(
-          "📝 Submit your feedback or requests here!",
-          style: TextStyle(fontSize: 16),
+      appBar: AppBar(
+        title: const Text('Feedback & Request'),
+        backgroundColor: Colors.white,
+        elevation: 1,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Type',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text("I have a suggestion"),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {},
+                  child: const Text("I found a bug"),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Your Message',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              decoration: InputDecoration(hintText: 'Please describe your feedback or request...'),
+              maxLines: 5,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Attach File (Optional)',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const TextField(
+              decoration: InputDecoration(hintText: 'Attach any relevant file here'),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text('Allow us to contact you'),
+                Switch(
+                  value: allowContact,
+                  onChanged: (bool value) {
+                    setState(() {
+                      allowContact = value; // Update the state when the toggle changes
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Your feedback has been submitted!")),
+                );
+              },
+              child: const Text('Submit'),
+            ),
+          ],
         ),
       ),
     );
