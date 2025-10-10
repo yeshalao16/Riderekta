@@ -34,11 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Get the user row (including hashed password)
+    // Get the user row (including plain text password)
     $user = $result->fetch_assoc();
 
-    // Verify plain password against stored hash
-    if (password_verify($password, $user['password'])) {
+    // WARNING: Comparing plain text passwords is a major security risk!
+    // In a real application, ALWAYS use password hashing and verification (e.g., password_verify()).
+    // This is only for testing or educational purposes.
+
+    // Verify plain password against stored plain text password
+    if ($password === $user['password']) {
         // Success! Remove password from response for security
         unset($user['password']);
         echo json_encode([
