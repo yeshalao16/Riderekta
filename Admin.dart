@@ -51,9 +51,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
             SizedBox(height: 20),
             _buildManageUsers(),
             SizedBox(height: 20),
-            _buildManageReports(),
+            _buildManageReports(), // Reports Section
             SizedBox(height: 20),
-            _buildFeedbackOverview(), // Add the feedback overview widget here
+            _buildFeedbackOverview(), // Feedback Overview Section
           ],
         ),
       ),
@@ -86,6 +86,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // Manage Reports Section
   Widget _buildManageReports() {
     return Card(
       child: ListTile(
@@ -99,7 +100,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // Feedback Overview Section (Now includes dynamic data for display)
+  // Feedback Overview Section
   Widget _buildFeedbackOverview() {
     return Card(
       child: Column(
@@ -107,7 +108,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ListTile(
             title: Text("Feedback Overview"),
           ),
-          // User Activity Issues
           ListTile(
             title: Text("User Activity Issues"),
             subtitle: Text("$userActivityIssues%"),
@@ -122,7 +122,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               },
             ),
           ),
-          // Route Usage Issues
           ListTile(
             title: Text("Route Usage Issues"),
             subtitle: Text("$routeUsageIssues%"),
@@ -137,7 +136,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               },
             ),
           ),
-          // General Feedback/Suggestions
           ListTile(
             title: Text("General Feedback / Suggestions"),
             subtitle: Text("$generalFeedback%"),
@@ -193,7 +191,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // Functions to navigate to different parts of the app
+  // Navigate to content management screen
   void _navigateToContentManagement() {
     Navigator.push(
       context,
@@ -201,6 +199,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // Navigate to user management screen
   void _navigateToUserManagement() {
     Navigator.push(
       context,
@@ -208,6 +207,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
+  // Navigate to reports screen
   void _navigateToReports() {
     Navigator.push(
       context,
@@ -225,7 +225,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 }
 
-// Content Management Screen (Placeholder)
+// Content Management Screen
 class ContentManagementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -270,7 +270,7 @@ class ContentManagementScreen extends StatelessWidget {
   }
 }
 
-// User Management Screen (Updated with Edit, View, Deactivate)
+// User Management Screen
 class UserManagementScreen extends StatefulWidget {
   @override
   _UserManagementScreenState createState() => _UserManagementScreenState();
@@ -366,19 +366,115 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   }
 }
 
-// Reports Screen (Missing class definition)
-class ReportsScreen extends StatelessWidget {
+// Reports Screen - Dropdown for report type selection
+class ReportsScreen extends StatefulWidget {
+  @override
+  _ReportsScreenState createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  String? selectedReportType;
+  final List<String> reportTypes = ['User Activity', 'Route Usage', 'Feedback'];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Manage Reports")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Text("Reports Generation Screen (Under Construction)"),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Generate Reports",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            // Dropdown for report types
+            DropdownButton<String>(
+              hint: Text("Select Report Type"),
+              value: selectedReportType,
+              onChanged: (String? newValue) {
+                setState(() {
+                  selectedReportType = newValue;
+                });
+              },
+              items: reportTypes.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+            ),
+            SizedBox(height: 20),
+            // Generate report button
+            ElevatedButton(
+              onPressed: () {
+                if (selectedReportType != null) {
+                  // Navigate to a new screen with the report details
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReportDetailsScreen(reportType: selectedReportType!),
+                    ),
+                  );
+                } else {
+                  // If the user hasn't selected a report type
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Please select a report type.")),
+                  );
+                }
+              },
+              child: Text("Generate Report"),
+            ),
+          ],
         ),
       ),
     );
+  }
+}
+
+// New screen to display the report details
+class ReportDetailsScreen extends StatelessWidget {
+  final String reportType;
+
+  ReportDetailsScreen({required this.reportType});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Report Details")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Generated Report: $reportType",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            Text(
+              _generateReport(reportType),
+              style: TextStyle(fontSize: 16),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _generateReport(String reportType) {
+    switch (reportType) {
+      case 'User Activity':
+        return "User Activity Report: 40% of users have issues.";
+      case 'Route Usage':
+        return "Route Usage Report: 35% of routes are having issues.";
+      case 'Feedback':
+        return "Feedback Report: 25% of users submitted feedback.";
+      default:
+        return "No report available.";
+    }
   }
 }
 
