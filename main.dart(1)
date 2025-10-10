@@ -6,6 +6,8 @@ import 'dart:convert';
 const String apiUrl = "http://10.0.2.2/riderekta/login.php";
 const String registerUrl = "http://10.0.2.2/riderekta/register.php";
 const String updateProfileUrl = "http://10.0.2.2/riderekta/update_profile.php";
+const String createPostUrl = "http://10.0.2.2/riderekta/create_post.php";
+const String getPostsUrl = "http://10.0.2.2/riderekta/get_posts.php";
 
 
 
@@ -869,9 +871,12 @@ class _UserDashboardState extends State<UserDashboard> {
               case 2:
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CommunityScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => CommunityScreen(username: username),
+                  ),
                 );
                 break;
+
             }
           });
         },
@@ -979,15 +984,15 @@ class RouteSafetyScreen extends StatelessWidget {
 }
 
 class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({super.key});
+  final String username; // passed from dashboard
+  const CommunityScreen({super.key, required this.username});
 
   @override
   State<CommunityScreen> createState() => _CommunityScreenState();
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  // 📝 List to hold posts
-  final List<Map<String, String>> posts = [
+  List<Map<String, dynamic>> posts = [
     {
       'author': 'Jane Doe',
       'title': 'Best E-Bike Routes in Manila?',
@@ -1006,10 +1011,37 @@ class _CommunityScreenState extends State<CommunityScreen> {
     },
   ];
 
-  // 👇 Add new post
-  void _addNewPost(Map<String, String> newPost) {
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPosts();
+  }
+
+  Future<void> _fetchPosts() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await http.get(Uri.parse(getPostsUrl));
+      final data = jsonDecode(response.body);
+
+      if (data["success"] == true && data["posts"] != null) {
+        final backendPosts =
+        List<Map<String, dynamic>>.from(data["posts"] as List);
+        setState(() {
+          posts = [...backendPosts, ...posts];
+        });
+      }
+    } catch (e) {
+      print("Fetch error: $e");
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  void _addNewPost(Map<String, dynamic> newPost) {
     setState(() {
-      posts.insert(0, newPost); // add to top
+      posts.insert(0, newPost);
     });
   }
 
@@ -1026,139 +1058,149 @@ class _CommunityScreenState extends State<CommunityScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // 🔍 Search bar
-                TextField(
-                  decoration: InputDecoration(
-                    hintText: "Search Topics",
-                    filled: true,
-                    fillColor: const Color(0xFFFEF7FF),
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide.none,
+        child: RefreshIndicator(
+          onRefresh: _fetchPosts,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    decoration: InputDecoration(
+                      hintText: "Search Topics",
+                      filled: true,
+                      fillColor: const Color(0xFFFEF7FF),
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // 🧱 Posts list
-                ListView.builder(
-                  physics: const NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    return Card(
-                      elevation: 3,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                  const SizedBox(height: 16),
+                  if (isLoading)
+                    const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(),
+                    )
+                  else
+                    ListView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      itemCount: posts.length,
+                      itemBuilder: (context, index) {
+                        final post = posts[index];
+                        return Card(
+                          elevation: 3,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const CircleAvatar(
-                                  radius: 20,
-                                  backgroundImage:
-                                  AssetImage('assets/profile.jpg'),
+                                Row(
+                                  children: [
+                                    const CircleAvatar(
+                                      radius: 20,
+                                      backgroundImage:
+                                      AssetImage('assets/profile.jpg'),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      post['author'] ?? 'Anonymous',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(height: 8),
                                 Text(
-                                  post['author'] ?? 'Anonymous',
+                                  post['title'] ?? '',
                                   style: const TextStyle(
-                                      fontWeight: FontWeight.bold),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(post['content'] ?? ''),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.thumb_up_alt,
+                                        size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(post['likes'] ?? '0'),
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.comment,
+                                        size: 16, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(post['comments'] ?? '0'),
+                                  ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              post['title'] ?? '',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(post['content'] ?? ''),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                const Icon(Icons.thumb_up_alt,
-                                    size: 16, color: Colors.grey),
-                                const SizedBox(width: 4),
-                                Text(post['likes'] ?? '0'),
-                                const SizedBox(width: 16),
-                                const Icon(Icons.comment,
-                                    size: 16, color: Colors.grey),
-                                const SizedBox(width: 4),
-                                Text(post['comments'] ?? '0'),
-                              ],
-                            ),
-                          ],
+                          ),
+                        );
+                      },
+                    ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: const Text(
+                      "Create a Post",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onPressed: () async {
+                      final newPost =
+                      await Navigator.push<Map<String, dynamic>>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              CreatePostScreen(username: widget.username),
                         ),
+                      );
+                      if (newPost != null) {
+                        _addNewPost(newPost);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    );
-                  },
-                ),
-
-                // ➕ Create Post Button
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.add, color: Colors.white),
-                  label: const Text("Create a Post",
-                      style: TextStyle(color: Colors.white)),
-                  onPressed: () async {
-                    final newPost = await Navigator.push<Map<String, String>>(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const CreatePostScreen()),
-                    );
-                    if (newPost != null) {
-                      _addNewPost(newPost);
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // 📞 Contact Us Button
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.mail_outline, color: Colors.deepPurple),
-                  label: const Text(
-                    "Contact Us",
-                    style: TextStyle(color: Colors.deepPurple),
-                  ),
-                  onPressed: () {
-                    // TODO: Link to your Contact page or email
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("📩 Contact Us page coming soon!")),
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Colors.deepPurple),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.mail_outline,
+                        color: Colors.deepPurple),
+                    label: const Text(
+                      "Contact Us",
+                      style: TextStyle(color: Colors.deepPurple),
+                    ),
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("📩 Contact Us page coming soon!"),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.deepPurple),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -1167,67 +1209,109 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 }
 
-
-
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({super.key});
+  final String username;
+  const CreatePostScreen({super.key, required this.username});
 
   @override
   State<CreatePostScreen> createState() => _CreatePostScreenState();
 }
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+  bool _isAnonymous = false;
+  bool _isPosting = false;
 
-  void _submitPost() {
-    if (titleController.text.isEmpty || contentController.text.isEmpty) {
+  Future<void> _submitPost() async {
+    if (_titleController.text.isEmpty || _contentController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Please fill out all fields.")),
+        const SnackBar(content: Text("Please fill in all fields")),
       );
       return;
     }
 
-    final newPost = {
-      'author': 'You',
-      'title': titleController.text.trim(),
-      'content': contentController.text.trim(),
-      'likes': '0',
-      'comments': '0',
-    };
+    setState(() => _isPosting = true);
 
-    Navigator.pop(context, newPost); // ✅ Send post back to CommunityScreen
+    try {
+      final response = await http.post(
+        Uri.parse(createPostUrl),
+        body: {
+          "author": _isAnonymous ? "Anonymous" : widget.username,
+          "title": _titleController.text.trim(),
+          "content": _contentController.text.trim(),
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (data["success"]) {
+        Navigator.pop(context, {
+          "author": _isAnonymous ? "Anonymous" : widget.username,
+          "title": _titleController.text,
+          "content": _contentController.text,
+          "likes": "0",
+          "comments": "0",
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error posting: $e")),
+      );
+    } finally {
+      setState(() => _isPosting = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Post')),
+      appBar: AppBar(title: const Text("Create Post")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
-              controller: titleController,
+              controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Title',
+                labelText: "Title",
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: contentController,
+              controller: _contentController,
+              maxLines: 5,
               decoration: const InputDecoration(
-                labelText: 'Description',
+                labelText: "Content",
                 border: OutlineInputBorder(),
               ),
-              maxLines: 5,
             ),
             const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Post as Anonymous"),
+                Switch(
+                  value: _isAnonymous,
+                  onChanged: (value) {
+                    setState(() => _isAnonymous = value);
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _submitPost,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-              child: const Text('Submit Post', style: TextStyle(color: Colors.white)),
+              onPressed: _isPosting ? null : _submitPost,
+              style:
+              ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              child: _isPosting
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text("Post",
+                  style: TextStyle(color: Colors.white)),
             ),
           ],
         ),
@@ -1237,7 +1321,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 }
 
 
-// ✅ Reusable Dashboard Card widget
+
+
+// Reusable Dashboard Card widget
 class _DashboardCard extends StatelessWidget {
   final String title;
   final String body;
