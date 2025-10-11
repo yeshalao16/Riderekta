@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ebike_specific_route.dart';
@@ -15,6 +16,7 @@ const String registerUrl = "http://192.168.254.116/register.php";
 const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
 const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
 const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
+
 
 
 
@@ -1129,6 +1131,8 @@ class _UserDashboardState extends State<UserDashboard> {
 
 
 
+
+
 class FeedbackRequestScreen extends StatefulWidget {
   const FeedbackRequestScreen({super.key});
 
@@ -1138,6 +1142,7 @@ class FeedbackRequestScreen extends StatefulWidget {
 
 class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
   bool allowContact = false;
+  String? attachedFilePath;
   String? attachedFileName;
   String selectedType = "";
   final TextEditingController _messageController = TextEditingController();
@@ -1146,6 +1151,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     final result = await FilePicker.platform.pickFiles();
     if (result != null && result.files.isNotEmpty) {
       setState(() {
+        attachedFilePath = result.files.single.path;
         attachedFileName = result.files.single.name;
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1155,31 +1161,59 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
   }
 
   Future<void> _submitFeedback() async {
-    final prefs = await SharedPreferences.getInstance();
-    final List<String> existing =
-        prefs.getStringList('feedback_list') ?? [];
+    if (_messageController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter your message.")),
+      );
+      return;
+    }
 
-    final Map<String, dynamic> feedback = {
-      "type": selectedType.isEmpty ? "General" : selectedType,
-      "message": _messageController.text.trim(),
-      "file": attachedFileName ?? "",
-      "allowContact": allowContact,
-      "timestamp": DateTime.now().toString(),
-    };
+    try {
+      final url = Uri.parse("http://192.168.254.116/riderekta/submit_feedback.php");
 
-    existing.add(jsonEncode(feedback));
-    await prefs.setStringList('feedback_list', existing);
+      var request = http.MultipartRequest('POST', url);
+      request.fields['type'] = selectedType.isEmpty ? "General" : selectedType;
+      request.fields['message'] = _messageController.text.trim();
+      request.fields['allow_contact'] = allowContact ? "1" : "0";
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Your feedback has been submitted!")),
-    );
+      if (attachedFilePath != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'attachment',
+          attachedFilePath!,
+        ));
+      }
 
-    setState(() {
-      selectedType = "";
-      _messageController.clear();
-      attachedFileName = null;
-      allowContact = false;
-    });
+      final response = await request.send();
+      final resBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(resBody);
+        if (data["success"] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Your feedback has been submitted!")),
+          );
+          setState(() {
+            selectedType = "";
+            _messageController.clear();
+            attachedFilePath = null;
+            attachedFileName = null;
+            allowContact = false;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed: ${data["message"] ?? "Unknown error"}")),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Server error! Please try again.")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error submitting feedback: $e")),
+      );
+    }
   }
 
   void _setType(String type) {
@@ -1206,10 +1240,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Type',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Type', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -1226,10 +1257,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Your Message',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Your Message', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: _messageController,
@@ -1240,10 +1268,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                 maxLines: 5,
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Attach File (Optional)',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Attach File (Optional)', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -1266,9 +1291,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
-                    child: Text('Allow us to contact you'),
-                  ),
+                  const Expanded(child: Text('Allow us to contact you')),
                   Switch(
                     value: allowContact,
                     onChanged: (bool value) {
@@ -1285,10 +1308,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 12,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                     textStyle: const TextStyle(fontSize: 16),
                   ),
                   onPressed: _submitFeedback,
