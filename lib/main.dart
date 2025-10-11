@@ -13,6 +13,7 @@ import 'RouteHistoryScreen.dart';
 
 // API endpoint
 // If testing on Android emulator, use 10.0.2.2
+// If testing on Physcial device, use 192.168.254.x
 const String apiUrl = "http://192.168.254.116/riderekta/login.php";
 const String registerUrl = "http://192.168.254.116/register.php";
 const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
@@ -545,6 +546,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
   bool privacy = true;
 
+  // If testing on Android emulator, use 10.0.2.2
+// If testing on Physcial device, use 192.168.254.x
   final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
   final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
 
@@ -1246,6 +1249,8 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     }
 
     try {
+      // If testing on Android emulator, use 10.0.2.2
+      // If testing on Physcial device, use 192.168.254.x
       final url = Uri.parse("http://192.168.254.116/riderekta/submit_feedback.php");
 
       var request = http.MultipartRequest('POST', url);
