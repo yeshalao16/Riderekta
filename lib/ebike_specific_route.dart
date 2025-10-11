@@ -33,7 +33,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   List<Map<String, dynamic>> _startSuggestions = [];
   List<Map<String, dynamic>> _endSuggestions = [];
 
-  // 🌍 Fetch autocomplete suggestions
+  // 🌍 Fetch autocomplete suggestions for any location (start or end)
   Future<List<Map<String, dynamic>>> _fetchSuggestions(String query) async {
     if (query.isEmpty) return [];
     final url =
@@ -48,21 +48,30 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     return [];
   }
 
-  // 🔍 When a suggestion is tapped
-  void _onSuggestionTap(Map<String, dynamic> place, bool isStart) {
+  // 🔍 When a start location suggestion is tapped
+  void _onStartSuggestionTap(Map<String, dynamic> place) {
     final lat = double.parse(place['lat']);
     final lon = double.parse(place['lon']);
     final location = LatLng(lat, lon);
     setState(() {
-      if (isStart) {
-        startLocation = location;
-        _startController.text = place['display_name'];
-        _startSuggestions = [];
-      } else {
-        dropOffLocation = location;
-        _endController.text = place['display_name'];
-        _endSuggestions = [];
-      }
+      startLocation = location;
+      _startController.text = place['display_name'];
+      _startSuggestions = [];
+    });
+    if (startLocation != null && dropOffLocation != null) {
+      _showEBikeRoute();
+    }
+  }
+
+  // 🔍 When a drop-off location suggestion is tapped
+  void _onEndSuggestionTap(Map<String, dynamic> place) {
+    final lat = double.parse(place['lat']);
+    final lon = double.parse(place['lon']);
+    final location = LatLng(lat, lon);
+    setState(() {
+      dropOffLocation = location;
+      _endController.text = place['display_name'];
+      _endSuggestions = [];
     });
     if (startLocation != null && dropOffLocation != null) {
       _showEBikeRoute();
@@ -101,7 +110,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     _mapController.move(loc, 15);
   }
 
-  // 📍 User taps destination
+  // 📍 User taps on the map to set drop-off location
   void _onMapTap(LatLng pos) {
     if (startLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,7 +122,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     setState(() {
       dropOffLocation = pos;
     });
-    _showEBikeRoute();
+    _showEBikeRoute(); // Recalculate and display the route
   }
 
   // 🚲 Fetch OSRM route
@@ -215,6 +224,19 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     return "Unknown location";
   }
 
+  // Function to refresh the route based on updated locations
+  void _refreshRoute() {
+    setState(() {
+      startLocation = null;
+      dropOffLocation = null;
+      _startController.clear();
+      _endController.clear();
+      routePoints.clear();
+      distanceText = null;
+      durationText = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -251,7 +273,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                 ),
                 _buildSearchField(
                   controller: _endController,
-                  hint: "Enter destination or tap map",
+                  hint: "Enter drop-off location or drag the Flag",
                   onChanged: (v) async {
                     final results = await _fetchSuggestions(v);
                     setState(() => _endSuggestions = results);
@@ -260,14 +282,45 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                   isStart: false,
                 ),
                 const SizedBox(height: 8),
-                ElevatedButton.icon(
-                  onPressed: _getCurrentLocation,
-                  icon: const Icon(Icons.my_location),
-                  label: const Text("Use My Current Location"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                  ),
+                // Row for My Current Location, Start Route, and Refresh Route buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Use My Current Location button
+                    ElevatedButton.icon(
+                      onPressed: _getCurrentLocation,
+                      icon: const Icon(Icons.my_location),
+                      label: const Text("My Current Location"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.deepPurple,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8), // Space between buttons
+                    // Start Route button
+                    ElevatedButton(
+                      onPressed: (startLocation != null && dropOffLocation != null)
+                          ? _showEBikeRoute
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("Start Routing"),
+                    ),
+                    const SizedBox(width: 8), // Space between buttons
+                    // Refresh Route button
+                    ElevatedButton(
+                      onPressed: (startLocation == null && dropOffLocation == null)
+                          ? null
+                          : _refreshRoute,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text("Refresh Route"),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -280,8 +333,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 "🚴 Distance: $distanceText | ⏱ Duration: $durationText",
-                style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
               ),
             ),
 
@@ -393,7 +445,9 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,
                     ),
-                    onTap: () => _onSuggestionTap(s, isStart),
+                    onTap: () => isStart
+                        ? _onStartSuggestionTap(s)
+                        : _onEndSuggestionTap(s),
                   );
                 },
               ),
