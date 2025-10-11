@@ -764,6 +764,8 @@ class _LoginScreenState extends State<LoginScreen> {
 }
 
 
+
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -1119,6 +1121,9 @@ class _UserDashboardState extends State<UserDashboard> {
   }
 }
 
+
+
+
 class FeedbackRequestScreen extends StatefulWidget {
   const FeedbackRequestScreen({super.key});
 
@@ -1127,7 +1132,7 @@ class FeedbackRequestScreen extends StatefulWidget {
 }
 
 class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
-  bool allowContact = false; // This will manage the state of the toggle switch
+  bool allowContact = false; // Manage the state of the toggle switch
 
   @override
   Widget build(BuildContext context) {
@@ -1137,69 +1142,96 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
         backgroundColor: Colors.white,
         elevation: 1,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Type',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("I have a suggestion"),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Type',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {},
+                    child: const Text("I have a suggestion"),
+                  ),
+                  ElevatedButton(
+                    onPressed: () {},
+                    child: const Text("I found a bug"),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Your Message',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const TextField(
+                decoration: InputDecoration(
+                  hintText: 'Please describe your feedback or request...',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {},
-                  child: const Text("I found a bug"),
+                maxLines: 5,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Attach File (Optional)',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const TextField(
+                decoration: InputDecoration(
+                  hintText: 'Attach any relevant file here',
+                  border: OutlineInputBorder(),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Your Message',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextField(
-              decoration: InputDecoration(hintText: 'Please describe your feedback or request...'),
-              maxLines: 5,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Attach File (Optional)',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextField(
-              decoration: InputDecoration(hintText: 'Attach any relevant file here'),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const Text('Allow us to contact you'),
-                Switch(
-                  value: allowContact,
-                  onChanged: (bool value) {
-                    setState(() {
-                      allowContact = value; // Update the state when the toggle changes
-                    });
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text('Allow us to contact you'),
+                  ),
+                  Switch(
+                    value: allowContact,
+                    onChanged: (bool value) {
+                      setState(() {
+                        allowContact = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Your feedback has been submitted!"),
+                      ),
+                    );
                   },
+                  child: const Text('Submit'),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Your feedback has been submitted!")),
-                );
-              },
-              child: const Text('Submit'),
-            ),
-          ],
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -1617,6 +1649,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 }
 
+
+
 class ContactUsScreen extends StatelessWidget {
   const ContactUsScreen({super.key});
 
@@ -1628,51 +1662,89 @@ class ContactUsScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 1,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Name',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextField(),
-            const SizedBox(height: 16),
-            const Text(
-              'Surname',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextField(),
-            const SizedBox(height: 16),
-            const Text(
-              'Email',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextField(),
-            const SizedBox(height: 16),
-            const Text(
-              'Message',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const TextField(
-              maxLines: 4,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Your message has been sent!")),
-                );
-              },
-              child: const Text('Submit'),
-            ),
-          ],
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Name',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const TextField(
+                decoration: InputDecoration(
+                  hintText: 'Enter your first name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Surname',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const TextField(
+                decoration: InputDecoration(
+                  hintText: 'Enter your last name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Email',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const TextField(
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  hintText: 'Enter your email address',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Message',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const TextField(
+                maxLines: 5,
+                decoration: InputDecoration(
+                  hintText: 'Enter your message here',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    textStyle: const TextStyle(fontSize: 16),
+                  ),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Your message has been sent!")),
+                    );
+                  },
+                  child: const Text('Submit'),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+
 
 
 // Reusable Dashboard Card widget
