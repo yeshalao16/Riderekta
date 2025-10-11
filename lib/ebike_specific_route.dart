@@ -24,6 +24,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
 
   String? distanceText;
   String? durationText;
+  String? userCountryCode;
 
   bool isLoadingRoute = false;
 
@@ -33,14 +34,39 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   List<Map<String, dynamic>> _startSuggestions = [];
   List<Map<String, dynamic>> _endSuggestions = [];
 
-  // 🌍 Fetch autocomplete suggestions for any location (start or end)
+  @override
+  void initState() {
+    super.initState();
+    _getUserCountry();
+  }
+
+  // 🗺️ Get user’s country for localized suggestions
+  Future<void> _getUserCountry() async {
+    try {
+      final pos = await Geolocator.getCurrentPosition();
+      final url =
+          "https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json";
+      final response = await http.get(Uri.parse(url),
+          headers: {'User-Agent': 'flutter-ebike-app'});
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final countryCode = data["address"]?["country_code"];
+        if (mounted) setState(() => userCountryCode = countryCode);
+      }
+    } catch (e) {
+      debugPrint("Failed to get user country: $e");
+    }
+  }
+
+  // 🔍 Fetch search suggestions
   Future<List<Map<String, dynamic>>> _fetchSuggestions(String query) async {
     if (query.isEmpty) return [];
+    final countryParam =
+    userCountryCode != null ? "&countrycodes=$userCountryCode" : "";
     final url =
-        "https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=5";
-    final response = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'flutter-ebike-app',
-    });
+        "https://nominatim.openstreetmap.org/search?q=$query&format=json&limit=5$countryParam";
+    final response = await http.get(Uri.parse(url),
+        headers: {'User-Agent': 'flutter-ebike-app'});
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return List<Map<String, dynamic>>.from(data);
@@ -48,7 +74,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     return [];
   }
 
-  // 🔍 When a start location suggestion is tapped
+  // 🟢 When selecting start suggestion
   void _onStartSuggestionTap(Map<String, dynamic> place) {
     final lat = double.parse(place['lat']);
     final lon = double.parse(place['lon']);
@@ -58,12 +84,12 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       _startController.text = place['display_name'];
       _startSuggestions = [];
     });
-    if (startLocation != null && dropOffLocation != null) {
-      _showEBikeRoute();
-    }
+
+    _mapController.move(location, 15);
+    if (startLocation != null && dropOffLocation != null) _showEBikeRoute();
   }
 
-  // 🔍 When a drop-off location suggestion is tapped
+  // 🔴 When selecting destination suggestion
   void _onEndSuggestionTap(Map<String, dynamic> place) {
     final lat = double.parse(place['lat']);
     final lon = double.parse(place['lon']);
@@ -73,17 +99,14 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       _endController.text = place['display_name'];
       _endSuggestions = [];
     });
-    if (startLocation != null && dropOffLocation != null) {
-      _showEBikeRoute();
-    }
+
+    _mapController.move(location, 15);
+    if (startLocation != null && dropOffLocation != null) _showEBikeRoute();
   }
 
-  // 🧭 Get current user location
+  // 📍 Use current location as start
   Future<void> _getCurrentLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please enable location services')),
@@ -91,7 +114,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       return;
     }
 
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return;
@@ -110,7 +133,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     _mapController.move(loc, 15);
   }
 
-  // 📍 User taps on the map to set drop-off location
+  // 🗺️ User taps on map → sets destination
   void _onMapTap(LatLng pos) {
     if (startLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -122,10 +145,10 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     setState(() {
       dropOffLocation = pos;
     });
-    _showEBikeRoute(); // Recalculate and display the route
+    _showEBikeRoute();
   }
 
-  // 🚲 Fetch OSRM route
+  // 🚲 Fetch and display route
   Future<void> _showEBikeRoute() async {
     if (startLocation == null || dropOffLocation == null) return;
 
@@ -148,8 +171,8 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
         if (data["routes"] != null && data["routes"].isNotEmpty) {
           final route = data["routes"][0];
           final coords = route["geometry"]["coordinates"];
-          final distance = route["distance"] / 1000; // meters → km
-          final duration = route["duration"] / 60; // seconds → minutes
+          final distance = route["distance"] / 1000;
+          final duration = route["duration"] / 60;
 
           setState(() {
             routePoints = coords
@@ -185,7 +208,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     );
   }
 
-  // 💾 Save route history
+  // 💾 Save route to SharedPreferences
   Future<void> _saveRouteToHistory(double distance, double duration) async {
     try {
       String startName = await _reverseGeocode(startLocation!);
@@ -201,6 +224,10 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
         'endName': endName,
         'distance': distance.toStringAsFixed(2),
         'duration': duration.toStringAsFixed(0),
+        'startLat': startLocation!.latitude,
+        'startLon': startLocation!.longitude,
+        'endLat': dropOffLocation!.latitude,
+        'endLon': dropOffLocation!.longitude,
         'timestamp': DateTime.now().toString(),
       });
 
@@ -214,9 +241,8 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   Future<String> _reverseGeocode(LatLng location) async {
     final url =
         "https://nominatim.openstreetmap.org/reverse?lat=${location.latitude}&lon=${location.longitude}&format=json";
-    final response = await http.get(Uri.parse(url), headers: {
-      'User-Agent': 'flutter-ebike-app',
-    });
+    final response = await http.get(Uri.parse(url),
+        headers: {'User-Agent': 'flutter-ebike-app'});
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return data["display_name"] ?? "Unknown location";
@@ -224,19 +250,57 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     return "Unknown location";
   }
 
-  // Function to refresh the route based on updated locations
-  void _refreshRoute() {
+  // 🔄 Reset Route
+  void _resetRoute() {
     setState(() {
       startLocation = null;
       dropOffLocation = null;
-      _startController.clear();
-      _endController.clear();
       routePoints.clear();
       distanceText = null;
       durationText = null;
+      _startController.clear();
+      _endController.clear();
+      _startSuggestions.clear();
+      _endSuggestions.clear();
     });
   }
 
+  // 🕘 Show route history list
+  Future<void> _selectFromHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString('route_history');
+    if (stored == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('No route history found.')));
+      return;
+    }
+    final history = List<Map<String, dynamic>>.from(json.decode(stored));
+
+    await showModalBottomSheet(
+      context: context,
+      builder: (context) => ListView.builder(
+        itemCount: history.length,
+        itemBuilder: (context, i) {
+          final r = history[i];
+          return ListTile(
+            leading: const Icon(Icons.history),
+            title: Text("${r['startName']} → ${r['endName']}"),
+            subtitle: Text("${r['distance']} km, ${r['duration']} mins"),
+            onTap: () {
+              Navigator.pop(context);
+              setState(() {
+                startLocation = LatLng(r['startLat'], r['startLon']);
+                dropOffLocation = LatLng(r['endLat'], r['endLon']);
+              });
+              _showEBikeRoute();
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  // 🧭 UI BUILD
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -244,101 +308,20 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
         title: const Text("E-Bike Route Finder"),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: "Reset Route",
+            onPressed: _resetRoute,
+          ),
+          IconButton(
             icon: const Icon(Icons.history),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RouteHistoryScreen()),
-              );
-            },
+            onPressed: _selectFromHistory,
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Search + Button
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                _buildSearchField(
-                  controller: _startController,
-                  hint: "Enter starting point or use current location",
-                  onChanged: (v) async {
-                    final results = await _fetchSuggestions(v);
-                    setState(() => _startSuggestions = results);
-                  },
-                  suggestions: _startSuggestions,
-                  isStart: true,
-                ),
-                _buildSearchField(
-                  controller: _endController,
-                  hint: "Enter drop-off location or drag the Flag",
-                  onChanged: (v) async {
-                    final results = await _fetchSuggestions(v);
-                    setState(() => _endSuggestions = results);
-                  },
-                  suggestions: _endSuggestions,
-                  isStart: false,
-                ),
-                const SizedBox(height: 8),
-                // Row for My Current Location, Start Route, and Refresh Route buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Use My Current Location button
-                    ElevatedButton.icon(
-                      onPressed: _getCurrentLocation,
-                      icon: const Icon(Icons.my_location),
-                      label: const Text("My Current Location"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.deepPurple,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8), // Space between buttons
-                    // Start Route button
-                    ElevatedButton(
-                      onPressed: (startLocation != null && dropOffLocation != null)
-                          ? _showEBikeRoute
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text("Start Routing"),
-                    ),
-                    const SizedBox(width: 8), // Space between buttons
-                    // Refresh Route button
-                    ElevatedButton(
-                      onPressed: (startLocation == null && dropOffLocation == null)
-                          ? null
-                          : _refreshRoute,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text("Refresh Route"),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          if (isLoadingRoute) const LinearProgressIndicator(),
-
-          if (distanceText != null && durationText != null)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                "🚴 Distance: $distanceText | ⏱ Duration: $durationText",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-            ),
-
-          // Map
-          Expanded(
+          // MAP
+          Positioned.fill(
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
@@ -384,12 +367,99 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
               ],
             ),
           ),
+
+          // SEARCH INPUTS (on top)
+          Positioned(
+            top: 10,
+            left: 8,
+            right: 8,
+            child: Column(
+              children: [
+                _buildSearchField(
+                  controller: _startController,
+                  hint: "Enter starting point or use current location",
+                  onChanged: (v) async {
+                    final results = await _fetchSuggestions(v);
+                    setState(() => _startSuggestions = results);
+                  },
+                  suggestions: _startSuggestions,
+                  isStart: true,
+                ),
+                const SizedBox(height: 8),
+                _buildSearchField(
+                  controller: _endController,
+                  hint: "Enter destination or tap map",
+                  onChanged: (v) async {
+                    final results = await _fetchSuggestions(v);
+                    setState(() => _endSuggestions = results);
+                  },
+                  suggestions: _endSuggestions,
+                  isStart: false,
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: _getCurrentLocation,
+                  icon: const Icon(Icons.my_location),
+                  label: const Text("Use My Current Location"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    elevation: 4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Distance/time info
+          if (distanceText != null && durationText != null)
+            Positioned(
+              bottom: 15,
+              left: 15,
+              right: 15,
+              child: Container(
+                padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.directions_bike,
+                        color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Distance: $distanceText",
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(Icons.timer, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Duration: $durationText",
+                      style: const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  // Custom small dropdown UI
+  // 🔽 Search field with dropdown suggestions
   Widget _buildSearchField({
     required TextEditingController controller,
     required String hint,
@@ -397,60 +467,59 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     required List<Map<String, dynamic>> suggestions,
     required bool isStart,
   }) {
-    return Stack(
+    return Column(
       children: [
-        Column(
-          children: [
-            TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: hint,
-                prefixIcon: Icon(
-                    isStart ? Icons.electric_bike_outlined : Icons.flag),
-                border: const OutlineInputBorder(),
+        Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(8),
+          child: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              hintText: hint,
+              prefixIcon:
+              Icon(isStart ? Icons.electric_bike_outlined : Icons.flag),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
-              onChanged: onChanged,
+              filled: true,
+              fillColor: Colors.white,
             ),
-            const SizedBox(height: 5),
-          ],
+            onChanged: onChanged,
+          ),
         ),
         if (suggestions.isNotEmpty)
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 55,
-            child: Container(
-              constraints: const BoxConstraints(maxHeight: 150),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            constraints: const BoxConstraints(maxHeight: 180),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: suggestions.length,
+              itemBuilder: (context, index) {
+                final s = suggestions[index];
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                    s['display_name'],
+                    style: const TextStyle(fontSize: 14),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 2,
                   ),
-                ],
-              ),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: suggestions.length,
-                itemBuilder: (context, index) {
-                  final s = suggestions[index];
-                  return ListTile(
-                    dense: true,
-                    title: Text(
-                      s['display_name'],
-                      style: const TextStyle(fontSize: 14),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                    ),
-                    onTap: () => isStart
-                        ? _onStartSuggestionTap(s)
-                        : _onEndSuggestionTap(s),
-                  );
-                },
-              ),
+                  onTap: () => isStart
+                      ? _onStartSuggestionTap(s)
+                      : _onEndSuggestionTap(s),
+                );
+              },
             ),
           ),
       ],
