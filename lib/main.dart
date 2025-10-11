@@ -286,7 +286,7 @@ class OurTeamScreen extends StatelessWidget {
     ];
 
     const description =
-        'Developed by a group of innovative students, RidereKta reflects our passion for technology and our commitment to improving everyday travel experiences.';
+        'Developed by a group of innovative students, Riderekta reflects our passion for technology and our commitment to improving everyday travel experiences.';
 
     return Scaffold(
       appBar: AppBar(
