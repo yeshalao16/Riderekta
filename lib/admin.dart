@@ -395,39 +395,93 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passController = TextEditingController();
+  bool _obscurePassword = true;
 
   void _login() {
-    if (emailController.text == "admin@admin.com" &&
-        passController.text == "admin") {
+    if (emailController.text.trim() == "admin@admin.com" &&
+        passController.text.trim() == "admin") {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Admin login successful!")),
+      );
+
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => AdminDashboard()),
       );
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("Invalid credentials")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Invalid credentials")),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Admin Login")),
+      appBar: AppBar(
+        title: const Text("Admin Login"),
+        backgroundColor: Colors.deepOrange,
+        centerTitle: true,
+      ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          TextField(
-            controller: emailController,
-            decoration: InputDecoration(labelText: "Email"),
-          ),
-          TextField(
-            controller: passController,
-            obscureText: true,
-            decoration: InputDecoration(labelText: "Password"),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(onPressed: _login, child: Text("Log In")),
-        ]),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Email Field
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Password Field with Eye Toggle
+            TextField(
+              controller: passController,
+              obscureText: _obscurePassword,
+              decoration: InputDecoration(
+                labelText: "Password",
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    color: Colors.deepOrange,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Login Button
+            ElevatedButton(
+              onPressed: _login,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 80, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                "Log In",
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -292,7 +292,7 @@ class OurTeamScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Our Team"),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Color(0xFFFF9800),
         elevation: 0,
       ),
       backgroundColor: Colors.white,
