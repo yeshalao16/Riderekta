@@ -7,7 +7,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'RouteHistoryScreen.dart';
 
-//
 class EBikeSpecificRouteScreen extends StatefulWidget {
   const EBikeSpecificRouteScreen({super.key});
 
@@ -41,7 +40,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     _getUserCountry();
   }
 
-  // 🗺️ Get user’s country for localized suggestions
+  // 🗺️ Get user's country for localized suggestions
   Future<void> _getUserCountry() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
@@ -149,7 +148,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     _showEBikeRoute();
   }
 
-  // 🚲 Fetch and display route
+  // 🚲 Fetch and display route (with orange bike route)
   Future<void> _showEBikeRoute() async {
     if (startLocation == null || dropOffLocation == null) return;
 
@@ -266,41 +265,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     });
   }
 
-  // 🕘 Show route history list
-  Future<void> _selectFromHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final stored = prefs.getString('route_history');
-    if (stored == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('No route history found.')));
-      return;
-    }
-    final history = List<Map<String, dynamic>>.from(json.decode(stored));
-
-    await showModalBottomSheet(
-      context: context,
-      builder: (context) => ListView.builder(
-        itemCount: history.length,
-        itemBuilder: (context, i) {
-          final r = history[i];
-          return ListTile(
-            leading: const Icon(Icons.history),
-            title: Text("${r['startName']} → ${r['endName']}"),
-            subtitle: Text("${r['distance']} km, ${r['duration']} mins"),
-            onTap: () {
-              Navigator.pop(context);
-              setState(() {
-                startLocation = LatLng(r['startLat'], r['startLon']);
-                dropOffLocation = LatLng(r['endLat'], r['endLon']);
-              });
-              _showEBikeRoute();
-            },
-          );
-        },
-      ),
-    );
-  }
-
   // 🧭 UI BUILD
   @override
   Widget build(BuildContext context) {
@@ -309,13 +273,21 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
         title: const Text("E-Bike Route Finder"),
         actions: [
           IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: "View Route History",
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RouteHistoryScreen(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: "Reset Route",
             onPressed: _resetRoute,
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: _selectFromHistory,
           ),
         ],
       ),
@@ -336,12 +308,13 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                   subdomains: const ['a', 'b', 'c'],
                 ),
+                // Orange route line
                 PolylineLayer(
                   polylines: [
                     Polyline(
                       points: routePoints,
                       strokeWidth: 5.0,
-                      color: Colors.deepPurple,
+                      color: Colors.deepOrange,
                     ),
                   ],
                 ),
@@ -360,8 +333,8 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                         point: dropOffLocation!,
                         width: 40,
                         height: 40,
-                        child:
-                        const Icon(Icons.flag, color: Colors.red, size: 40),
+                        child: const Icon(Icons.flag,
+                            color: Colors.red, size: 40),
                       ),
                   ],
                 ),
@@ -369,7 +342,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
             ),
           ),
 
-          // SEARCH INPUTS (on top)
+          // SEARCH INPUTS
           Positioned(
             top: 10,
             left: 8,
@@ -403,7 +376,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                   icon: const Icon(Icons.my_location),
                   label: const Text("Use My Current Location"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: Colors.deepOrange,
                     foregroundColor: Colors.white,
                     elevation: 4,
                   ),
@@ -412,7 +385,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
             ),
           ),
 
-          // Distance/time info
+          // DISTANCE/TIME INFO (responsive)
           if (distanceText != null && durationText != null)
             Positioned(
               bottom: 15,
@@ -432,20 +405,19 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 10,
+                  runSpacing: 6,
                   children: [
                     const Icon(Icons.directions_bike,
-                        color: Colors.deepPurple),
-                    const SizedBox(width: 8),
+                        color: Colors.deepOrange),
                     Text(
                       "Distance: $distanceText",
                       style: const TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(width: 16),
-                    const Icon(Icons.timer, color: Colors.deepPurple),
-                    const SizedBox(width: 8),
+                    const Icon(Icons.timer, color: Colors.deepOrange),
                     Text(
                       "Duration: $durationText",
                       style: const TextStyle(
@@ -455,12 +427,40 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                 ),
               ),
             ),
+
+          // 🟠 LEGEND (bike lane info)
+          Positioned(
+            bottom: 80,
+            right: 15,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Icon(Icons.linear_scale, color: Colors.deepOrange, size: 20),
+                  SizedBox(width: 6),
+                  Text("Bike Route", style: TextStyle(fontSize: 13)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // 🔽 Search field with dropdown suggestions
+  // 🔽 Search field builder
   Widget _buildSearchField({
     required TextEditingController controller,
     required String hint,
