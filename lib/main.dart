@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io';
@@ -11,6 +12,7 @@ import 'RouteHistoryScreen.dart';
 
 
 // API endpoint
+// If testing on Android emulator, use 10.0.2.2
 const String apiUrl = "http://192.168.254.116/riderekta/login.php";
 const String registerUrl = "http://192.168.254.116/register.php";
 const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
@@ -251,13 +253,15 @@ class AboutScreen extends StatelessWidget {
   }
 }
 
+
+
+
 ///////////////////// TEAM SECTION //////////////////////////////////
 class OurTeamScreen extends StatelessWidget {
   const OurTeamScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Team member data
     final teamMembers = [
       {
         'name': 'Yesha Nicholai Lao',
@@ -281,63 +285,135 @@ class OurTeamScreen extends StatelessWidget {
       },
     ];
 
+    const description =
+        'Developed by a group of innovative students, RidereKta reflects our passion for technology and our commitment to improving everyday travel experiences.';
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Our Team"),
+        centerTitle: true,
+        backgroundColor: Colors.blueAccent,
+        elevation: 0,
+      ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
-              "Riderekta is built by a dedicated team of innovators working together to create a safer and greener way to travel:",
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            // 🔹 App Logo + Description
+            FadeInDown(
+              duration: const Duration(milliseconds: 800),
+              child: Column(
+                children: [
+                  Image.asset(
+                    'assets/Riderekta.png',
+                    height: 120,
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    description,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      height: 1.5,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 30),
+
+            // 🔹 Intro text
+            FadeInUp(
+              duration: const Duration(milliseconds: 800),
+              child: const Text(
+                "Riderekta is built by a dedicated team of innovators working together to create a safer and greener way to travel:",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
             ),
             const SizedBox(height: 24),
 
-            // Team Members
+            // 🔹 Animated Team Members
             Column(
-              children: teamMembers.map((member) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      radius: 26,
-                      backgroundImage: AssetImage(member['image']!),
+              children: teamMembers.asMap().entries.map((entry) {
+                final index = entry.key;
+                final member = entry.value;
+                return FadeInUp(
+                  duration: Duration(milliseconds: 600 + (index * 150)),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    title: Text(
-                      member['name']!,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: Colors.black,
-                      ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 30,
+                          backgroundImage: AssetImage(member['image']!),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                member['name']!,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                member['role']!,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    subtitle: Text(
-                      member['role']!,
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 13,
-                      ),
-                    ),
-                    contentPadding: EdgeInsets.zero,
                   ),
                 );
               }).toList(),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 28),
 
-            const Text(
-              "Together, we combine our skills in project management, development, and testing to deliver a reliable and user-friendly app for e-bike riders.",
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: Colors.black87,
+            // 🔹 Closing statement
+            FadeInUp(
+              duration: const Duration(milliseconds: 800),
+              child: const Text(
+                "Together, we combine our skills in project management, development, and testing to deliver a reliable and user-friendly app for e-bike riders.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  height: 1.6,
+                  color: Colors.black87,
+                ),
               ),
             ),
           ],
@@ -346,6 +422,7 @@ class OurTeamScreen extends StatelessWidget {
     );
   }
 }
+
 
 ///////////////////// BENEFITS SECTION /////////////////////////////
 class BenefitsScreen extends StatelessWidget {

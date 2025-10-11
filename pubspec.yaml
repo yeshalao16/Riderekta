@@ -36,6 +36,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
+  animate_do: ^3.3.4
   file_picker: ^8.0.0
   shared_preferences: ^2.2.3
   flutter_map: ^7.0.0
@@ -69,6 +70,7 @@ flutter:
     - assets/ebike1.jpg
     - assets/ebike2.jpg
     - assets/ebike3.jpg
+    - assets/Riderekta.png
 
     - assets/images/yesha.png
     - assets/images/geraldine.png
