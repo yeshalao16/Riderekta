@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'ebike_specific_route.dart';
 import 'admin.dart';
 import 'RouteHistoryScreen.dart';
@@ -1125,6 +1127,8 @@ class _UserDashboardState extends State<UserDashboard> {
 
 
 
+
+
 class FeedbackRequestScreen extends StatefulWidget {
   const FeedbackRequestScreen({super.key});
 
@@ -1133,7 +1137,60 @@ class FeedbackRequestScreen extends StatefulWidget {
 }
 
 class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
-  bool allowContact = false; // Manage the state of the toggle switch
+  bool allowContact = false;
+  String? attachedFileName;
+  String selectedType = "";
+  final TextEditingController _messageController = TextEditingController();
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles();
+    if (result != null && result.files.isNotEmpty) {
+      setState(() {
+        attachedFileName = result.files.single.name;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File attached: ${result.files.single.name}')),
+      );
+    }
+  }
+
+  Future<void> _submitFeedback() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> existing =
+        prefs.getStringList('feedback_list') ?? [];
+
+    final Map<String, dynamic> feedback = {
+      "type": selectedType.isEmpty ? "General" : selectedType,
+      "message": _messageController.text.trim(),
+      "file": attachedFileName ?? "",
+      "allowContact": allowContact,
+      "timestamp": DateTime.now().toString(),
+    };
+
+    existing.add(jsonEncode(feedback));
+    await prefs.setStringList('feedback_list', existing);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Your feedback has been submitted!")),
+    );
+
+    setState(() {
+      selectedType = "";
+      _messageController.clear();
+      attachedFileName = null;
+      allowContact = false;
+    });
+  }
+
+  void _setType(String type) {
+    setState(() {
+      selectedType = type;
+      _messageController.text = "$type: ";
+      _messageController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _messageController.text.length),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1159,11 +1216,11 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                 runSpacing: 8,
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () => _setType("Suggestion"),
                     child: const Text("I have a suggestion"),
                   ),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () => _setType("Bug Report"),
                     child: const Text("I found a bug"),
                   ),
                 ],
@@ -1174,8 +1231,9 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: _messageController,
+                decoration: const InputDecoration(
                   hintText: 'Please describe your feedback or request...',
                   border: OutlineInputBorder(),
                 ),
@@ -1187,11 +1245,22 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-              const TextField(
-                decoration: InputDecoration(
-                  hintText: 'Attach any relevant file here',
-                  border: OutlineInputBorder(),
-                ),
+              Row(
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _pickFile,
+                    icon: const Icon(Icons.attach_file),
+                    label: const Text('Attach File'),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      attachedFileName ?? 'No file selected',
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               Row(
@@ -1216,17 +1285,13 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.deepPurple,
                     foregroundColor: Colors.white,
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
                     textStyle: const TextStyle(fontSize: 16),
                   ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Your feedback has been submitted!"),
-                      ),
-                    );
-                  },
+                  onPressed: _submitFeedback,
                   child: const Text('Submit'),
                 ),
               ),
@@ -1238,6 +1303,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     );
   }
 }
+
 
 
 
