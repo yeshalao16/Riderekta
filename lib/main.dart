@@ -144,10 +144,10 @@ class AboutScreen extends StatelessWidget {
     final double imageWidth = (screenWidth - totalHorizontal) / 2;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(10.0),
       child: Column(
         children: [
-          const SizedBox(height: 30),
+          const SizedBox(height: 10),
           const Text(
             "RIDEREKTA",
             style: TextStyle(
@@ -159,7 +159,7 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            "Subtitle",
+            "Your E-Bike's New Navigator",
             style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
           const SizedBox(height: 20),
@@ -183,8 +183,8 @@ class AboutScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Image.asset(
-                    'assets/ebike1.png',
-                    width: 120,
+                    'assets/ebike1.jpg',
+                    width: 300,
                     height: 120,
                     fit: BoxFit.cover,
                   ),
@@ -213,7 +213,7 @@ class AboutScreen extends StatelessWidget {
               children: [
                 Flexible(
                   child: Image.asset(
-                    'assets/ebike2.png',
+                    'assets/ebike2.jpg',
                     height: 100,
                     fit: BoxFit.cover,
                   ),
@@ -221,7 +221,7 @@ class AboutScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Flexible(
                   child: Image.asset(
-                    'assets/ebike3.png',
+                    'assets/ebike3.jpg',
                     height: 100,
                     fit: BoxFit.cover,
                   ),
@@ -229,9 +229,9 @@ class AboutScreen extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height:10),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.0),
+            padding: EdgeInsets.symmetric(horizontal: 10.0),
             child: Text(
               'Continuous Improvement: Give feedback directly and help us improve Riderekta for everyone.',
               textAlign: TextAlign.center,
@@ -247,30 +247,201 @@ class AboutScreen extends StatelessWidget {
   }
 }
 
+///////////////////// TEAM SECTION //////////////////////////////////
 class OurTeamScreen extends StatelessWidget {
   const OurTeamScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        "Meet our awesome team!",
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    // Team member data
+    final teamMembers = [
+      {
+        'name': 'Yesha Nicholai Lao',
+        'role': 'Scrum Master',
+        'image': 'assets/images/yesha.png',
+      },
+      {
+        'name': 'Geraldine Kaye Novilla',
+        'role': 'Back-End Developer',
+        'image': 'assets/images/geraldine.png',
+      },
+      {
+        'name': 'Kyla Fhe Sable',
+        'role': 'Front-End Developer',
+        'image': 'assets/images/kyla.png',
+      },
+      {
+        'name': 'Noel Bayona',
+        'role': 'Quality Assurance (QA)',
+        'image': 'assets/images/noel.png',
+      },
+    ];
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Riderekta is built by a dedicated team of innovators working together to create a safer and greener way to travel:",
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Team Members
+            Column(
+              children: teamMembers.map((member) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      radius: 26,
+                      backgroundImage: AssetImage(member['image']!),
+                    ),
+                    title: Text(
+                      member['name']!,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: Colors.black,
+                      ),
+                    ),
+                    subtitle: Text(
+                      member['role']!,
+                      style: const TextStyle(
+                        color: Colors.grey,
+                        fontSize: 13,
+                      ),
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 20),
+
+            const Text(
+              "Together, we combine our skills in project management, development, and testing to deliver a reliable and user-friendly app for e-bike riders.",
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+///////////////////// BENEFITS SECTION /////////////////////////////
 class BenefitsScreen extends StatelessWidget {
   const BenefitsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        "Enjoy the benefits of safe, eco-friendly e-bike navigation.",
-        style: TextStyle(fontSize: 16),
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- Intro paragraph ---
+            const Text(
+              "Riderekta is a dedicated e-bike navigation and community app designed to make electric bike commuting smarter, safer, and more enjoyable. The app provides customized routes optimized for e-bikes, highlighting safe cycling lanes and avoiding unsafe or high-traffic roads. Beyond navigation, Riderekta fosters a vibrant rider community, offering features such as forums, feedback channels, and direct support.",
+              style: TextStyle(
+                fontSize: 15,
+                height: 1.6,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // --- Benefit 1 ---
+            _buildBenefit(
+              icon: Icons.group,
+              title: "Ride Together, Grow Together",
+              description:
+              "Join a vibrant network of e-bike enthusiasts! Access dedicated forums, local rider groups, and real-time feedback channels. Get direct support, share tips, and find the best trails from a community that understands e-biking.",
+            ),
+
+            const SizedBox(height: 24),
+            const Divider(),
+
+            // --- Benefit 2 ---
+            _buildBenefit(
+              icon: Icons.map,
+              title: "Optimized E-Bike Navigation",
+              description:
+              "Stop guessing. Riderekta provides customized routes that maximize safety and enjoyment. We prioritize dedicated cycling lanes, low-traffic roads, and legal e-bike paths, ensuring you effortlessly avoid highways and unsafe areas.",
+            ),
+
+            const SizedBox(height: 24),
+            const Divider(),
+
+            // --- Benefit 3 ---
+            _buildBenefit(
+              icon: Icons.pedal_bike,
+              title: "Commuting Made Enjoyable",
+              description:
+              "Say goodbye to range anxiety and complex maps. Our intuitive interface allows for quick route planning, while our optimization features help you get the most out of your battery and your ride. Enjoy a stress-free, scenic, and eco-friendly commute every time.",
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+
+  Widget _buildBenefit({
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 34,
+          color: Colors.orange.shade700,
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.5,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
