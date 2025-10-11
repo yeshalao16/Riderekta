@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:flutter_application_1/ebike_specific_route.dart';
+import 'ebike_specific_route.dart';
 import 'admin.dart';
 import 'RouteHistoryScreen.dart';
 
@@ -9,7 +9,7 @@ import 'RouteHistoryScreen.dart';
 
 // API endpoint
 const String apiUrl = "http://192.168.254.116/riderekta/login.php";
-const String registerUrl = "http://192.168.254.116/riderekta/register.php";
+const String registerUrl = "http://192.168.254.116/register.php";
 const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
 const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
 const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
@@ -28,7 +28,7 @@ class RiderektaApp extends StatelessWidget {
     return MaterialApp(
       title: 'Riderekta',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
       home: const MainScreen(),
@@ -87,7 +87,7 @@ class _MainScreenState extends State<MainScreen>
               );
             },
             style: TextButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Colors.deepOrange,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -110,9 +110,9 @@ class _MainScreenState extends State<MainScreen>
                 Tab(text: 'Team'),
                 Tab(text: 'Benefits'),
               ],
-              labelColor: Colors.deepPurple,
+              labelColor: Colors.deepOrange,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.deepPurple,
+              indicatorColor: Colors.deepOrange,
             ),
             Expanded(
               child: TabBarView(
@@ -153,7 +153,7 @@ class AboutScreen extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 28,
-              color: Colors.deepPurple,
+              color: Colors.deepOrange,
               letterSpacing: 2,
             ),
           ),
@@ -400,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _saveProfile,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
                 child: const Text("Save Changes", style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 40),
@@ -424,8 +424,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
-
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -438,11 +436,12 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+
   Future<void> login() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    // Simple admin login check first
+    // Simple admin login check
     if (email == 'admin@admin.com' && password == 'admin') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("✅ Admin login successful!")),
@@ -455,7 +454,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Otherwise, proceed with user login
+    // Otherwise, proceed with API login
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -489,6 +488,20 @@ class _LoginScreenState extends State<LoginScreen> {
         SnackBar(content: Text("⚠️ Error: $e")),
       );
     }
+  }
+
+  // 👇 Add this function for quick login
+  void quickLogin() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("🚀 Quick login successful!")),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserDashboard(email: "guest@demo.com"),
+      ),
+    );
   }
 
   @override
@@ -531,17 +544,33 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             const SizedBox(height: 20),
+
+            // Normal Login Button
             ElevatedButton(
               onPressed: login,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Colors.deepOrange,
               ),
               child: const Text(
                 "Login",
                 style: TextStyle(color: Colors.white),
               ),
             ),
+
             const SizedBox(height: 10),
+
+            // 👇 Quick Login Button
+            OutlinedButton.icon(
+              onPressed: quickLogin,
+              icon: const Icon(Icons.flash_on, color: Colors.deepOrange),
+              label: const Text(
+                "Quick Login (No SQL)",
+                style: TextStyle(color: Colors.deepOrange),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             TextButton(
               onPressed: () {
                 Navigator.push(
@@ -553,7 +582,7 @@ class _LoginScreenState extends State<LoginScreen> {
               },
               child: const Text(
                 "Don't have an account? Sign Up",
-                style: TextStyle(color: Colors.deepPurple),
+                style: TextStyle(color: Colors.deepOrange),
               ),
             ),
           ],
@@ -562,6 +591,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -672,7 +702,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ElevatedButton(
               onPressed: register,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: Colors.deepOrange,
               ),
               child: const Text(
                 "Sign Up",
@@ -746,12 +776,12 @@ class _UserDashboardState extends State<UserDashboard> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: selected ? Colors.deepPurple : Colors.grey),
+          Icon(icon, color: selected ? Colors.deepOrange : Colors.grey),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: selected ? Colors.deepPurple : Colors.grey,
+              color: selected ? Colors.deepOrange : Colors.grey,
               fontSize: 12,
               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
             ),
@@ -806,7 +836,7 @@ class _UserDashboardState extends State<UserDashboard> {
                   ),
                   SizedBox(width: 4),
                   Icon(Icons.emoji_emotions_outlined,
-                      color: Colors.deepPurple, size: 18),
+                      color: Colors.deepOrange, size: 18),
                 ],
               ),
             ),
@@ -832,7 +862,7 @@ class _UserDashboardState extends State<UserDashboard> {
           children: [
             const CircleAvatar(
               radius: 40,
-              backgroundColor: Colors.deepPurple,
+              backgroundColor: Colors.deepOrange,
               child: Icon(Icons.person, size: 50, color: Colors.white),
             ),
             const SizedBox(height: 12),
@@ -845,7 +875,7 @@ class _UserDashboardState extends State<UserDashboard> {
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.deepPurple,
+                color: Colors.deepOrange,
               ),
             ),
             const SizedBox(height: 25),
@@ -1260,7 +1290,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
+                            backgroundColor: Colors.deepOrange,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -1285,7 +1315,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepPurple,
+                            backgroundColor: Colors.deepOrange,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
@@ -1403,7 +1433,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ElevatedButton(
               onPressed: _isPosting ? null : _submitPost,
               style:
-              ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+              ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
               child: _isPosting
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text("Post",
@@ -1500,3 +1530,4 @@ class _DashboardCard extends StatelessWidget {
     );
   }
 }
+
