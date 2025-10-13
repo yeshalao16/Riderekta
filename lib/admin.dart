@@ -100,18 +100,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onPressed: _navigateToFeedbackManagement,
           ),
         ),
-        ListTile(
-          title: Text("User Activity Issues"),
-          subtitle: Text("$userActivityIssues%"),
-        ),
-        ListTile(
-          title: Text("Route Usage Issues"),
-          subtitle: Text("$routeUsageIssues%"),
-        ),
-        ListTile(
-          title: Text("General Feedback / Suggestions"),
-          subtitle: Text("$generalFeedback%"),
-        ),
+
       ],
     ),
   );
