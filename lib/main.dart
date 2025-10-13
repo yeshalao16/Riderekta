@@ -14,11 +14,11 @@ import 'RouteHistoryScreen.dart';
 // API endpoint
 // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-const String apiUrl = "http://192.168.254.116/riderekta/login.php";
-const String registerUrl = "http://192.168.254.116/register.php";
-const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
-const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
-const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
+const String apiUrl = "http://10.1.21.124/riderekta/login.php";
+const String registerUrl = "http://10.1.21.124/register.php";
+const String updateProfileUrl = "http://10.1.21.124/update_profile.php";
+const String createPostUrl = "http://10.1.21.124/riderekta/create_post.php";
+const String getPostsUrl = "http://10.1.21.124/riderekta/get_posts.php";
 
 
 
@@ -424,6 +424,34 @@ class OurTeamScreen extends StatelessWidget {
   }
 }
 
+// LOGOUT CONFIRMATION DIALOG ADDED HERE
+void _showLogoutConfirmationDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Are you sure you want to log out?"),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close the dialog
+            },
+            child: const Text("No"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              ); // Navigate to the login screen
+            },
+            child: const Text("Yes", style: TextStyle(color: Colors.deepOrange)),
+          ),
+        ],
+      );
+    },
+  );
+}
 
 ///////////////////// BENEFITS SECTION /////////////////////////////
 class BenefitsScreen extends StatelessWidget {
@@ -548,8 +576,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
-  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+  final String getUserUrl = "http://10.1.21.124/riderekta/get_user.php";
+  final String updateProfileUrl = "http://10.1.21.124/riderekta/update_profile.php";
 
   @override
   void initState() {
@@ -974,7 +1002,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 // After successful login
-// Updated User Dashboard Page with bottom navigation bar
 class UserDashboard extends StatefulWidget {
   final String email; // email passed from login
   const UserDashboard({super.key, required this.email});
@@ -1048,113 +1075,134 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
+  Future<bool> _onBackPressed() async {
+    // Show a confirmation dialog when the back button is pressed
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Are you sure you want to exit?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    ) ??
+        false; // If the dialog returns null, treat it as false
+  }
+
   @override
   Widget build(BuildContext context) {
     final username = widget.email.split('@')[0]; // Extract username before '@'
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 1,
-        title: Row(
-          children: [
-            // 🔹 Popup menu
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.menu, color: Colors.black),
-              color: const Color(0xFFFEF7FF),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+    return WillPopScope(
+      onWillPop: _onBackPressed, // Intercept the back button
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false, // Remove the back button
+          backgroundColor: Colors.white,
+          elevation: 1,
+          title: Row(
+            children: [
+              // 🔹 Popup menu
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.menu, color: Colors.black),
+                color: const Color(0xFFFEF7FF),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                onSelected: _handleMenuSelection,
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'recent', child: Text('RECENT ROUTE HISTORY')),
+                  PopupMenuItem(value: 'specific', child: Text('E-BIKE SPECIFIC ROUTE')),
+                  PopupMenuItem(value: 'safety', child: Text('E-BIKE ROUTE SAFETY')),
+                  PopupMenuItem(value: 'settings', child: Text('SETTINGS')),
+                ],
               ),
-              onSelected: _handleMenuSelection,
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'recent', child: Text('RECENT ROUTE HISTORY')),
-                PopupMenuItem(value: 'specific', child: Text('E-BIKE SPECIFIC ROUTE')),
-                PopupMenuItem(value: 'safety', child: Text('E-BIKE ROUTE SAFETY')),
-                PopupMenuItem(value: 'settings', child: Text('SETTINGS')),
-              ],
-            ),
-            const SizedBox(width: 10),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FeedbackRequestScreen()),
-                );
-              },
-              child: Row(
-                children: const [
-                  Text(
-                    "Feedback & Reqs",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black87,
+              const SizedBox(width: 10),
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FeedbackRequestScreen()),
+                  );
+                },
+                child: Row(
+                  children: const [
+                    Text(
+                      "Feedback & Reqs",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 4),
-                  Icon(Icons.emoji_emotions_outlined,
-                      color: Colors.deepOrange, size: 18),
-                ],
+                    SizedBox(width: 4),
+                    Icon(Icons.emoji_emotions_outlined,
+                        color: Colors.deepOrange, size: 18),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.black),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
+            ],
           ),
-        ],
-      ),
-
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const CircleAvatar(
-              radius: 40,
-              backgroundColor: Colors.deepOrange,
-              child: Icon(Icons.person, size: 50, color: Colors.white),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Welcome Back,",
-              style: TextStyle(fontSize: 20, color: Colors.grey[700]),
-            ),
-            Text(
-              "$username!",
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.deepOrange,
-              ),
-            ),
-            const SizedBox(height: 25),
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 1.2,
-                children: const [
-                  _DashboardCard(title: "Total Rides", body: "Review body"),
-                  _DashboardCard(title: "Distance Traveled", body: "Review body"),
-                  _DashboardCard(title: "Review title", body: "Review body"),
-                ],
-              ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.black),
+              onPressed: () {
+                _showLogoutConfirmationDialog(context); // Show confirmation dialog
+              },
             ),
           ],
         ),
-      ),
 
-      // Bottom Navigation Bar
-      bottomNavigationBar: BottomNavigationBar(
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.deepOrange,
+                child: Icon(Icons.person, size: 50, color: Colors.white),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Welcome Back,",
+                style: TextStyle(fontSize: 20, color: Colors.grey[700]),
+              ),
+              Text(
+                "$username!",
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepOrange,
+                ),
+              ),
+              const SizedBox(height: 25),
+              Expanded(
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 1.2,
+                  children: const [
+                    _DashboardCard(title: "Total Rides", body: "Review body"),
+                    _DashboardCard(title: "Distance Traveled", body: "Review body"),
+                    _DashboardCard(title: "Review title", body: "Review body"),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Bottom Navigation Bar
+        bottomNavigationBar: BottomNavigationBar(
           currentIndex: 0, // Initially set to 'Start Route'
           onTap: (index) {
             setState(() {
@@ -1181,7 +1229,6 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
                   );
                   break;
-
               }
             });
           },
@@ -1197,14 +1244,13 @@ class _UserDashboardState extends State<UserDashboard> {
             BottomNavigationBarItem(
               icon: Icon(Icons.forum),
               label: 'Community', // Third Tab
-
             ),
-          ]
+          ],
+        ),
       ),
     );
   }
 }
-
 
 
 
@@ -1251,7 +1297,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     try {
       // If testing on Android emulator, use 10.0.2.2
       // If testing on Physcial device, use 192.168.254.x
-      final url = Uri.parse("http://192.168.254.116/riderekta/submit_feedback.php");
+      final url = Uri.parse("http://10.1.21.124/riderekta/submit_feedback.php");
 
       var request = http.MultipartRequest('POST', url);
       request.fields['type'] = selectedType.isEmpty ? "General" : selectedType;
@@ -1949,4 +1995,3 @@ class _DashboardCard extends StatelessWidget {
     );
   }
 }
-
