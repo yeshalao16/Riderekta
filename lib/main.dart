@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'ebike_specific_route.dart';
 import 'admin.dart';
 import 'RouteHistoryScreen.dart';
@@ -14,11 +12,11 @@ import 'RouteHistoryScreen.dart';
 // API endpoint
 // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-const String apiUrl = "http://192.168.254.116/riderekta/login.php";
-const String registerUrl = "http://192.168.254.116/register.php";
-const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
-const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
-const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
+const String apiUrl = "http://10.1.21.175/riderekta/login.php";
+const String registerUrl = "http://10.1.21.175/register.php";
+const String updateProfileUrl = "http://10.1.21.175/riderekta/update_profile.php";
+const String createPostUrl = "http://10.1.21.175/riderekta/create_post.php";
+const String getPostsUrl = "http://10.1.21.175/riderekta/get_posts.php";
 
 
 
@@ -548,8 +546,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
-  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+  final String getUserUrl = "http://10.1.21.175/riderekta/get_user.php";
+  final String updateProfileUrl = "http://10.1.21.175/riderekta/update_profile.php";
 
   @override
   void initState() {
@@ -1251,7 +1249,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     try {
       // If testing on Android emulator, use 10.0.2.2
       // If testing on Physcial device, use 192.168.254.x
-      final url = Uri.parse("http://192.168.254.116/riderekta/submit_feedback.php");
+      final url = Uri.parse("http://10.1.21.175/riderekta/submit_feedback.php");
 
       var request = http.MultipartRequest('POST', url);
       request.fields['type'] = selectedType.isEmpty ? "General" : selectedType;
@@ -1477,8 +1475,12 @@ class RouteSafetyScreen extends StatelessWidget {
   }
 }
 
+
+
+
+
 class CommunityScreen extends StatefulWidget {
-  final String username; // passed from dashboard
+  final String username;
   const CommunityScreen({super.key, required this.username});
 
   @override
@@ -1522,9 +1524,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (data["success"] == true && data["posts"] != null) {
         final backendPosts =
         List<Map<String, dynamic>>.from(data["posts"] as List);
+
+        // Combine backend posts and default ones (backend first)
         setState(() {
           posts = [...backendPosts, ...posts];
         });
+      } else {
+        print("⚠️ No posts found in database");
       }
     } catch (e) {
       print("Fetch error: $e");
@@ -1533,10 +1539,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
-  void _addNewPost(Map<String, dynamic> newPost) {
+  void _addNewPost(Map<String, dynamic> newPost) async {
     setState(() {
       posts.insert(0, newPost);
     });
+    await _fetchPosts(); // refresh to include from DB
   }
 
   @override
@@ -1626,12 +1633,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
                                     const Icon(Icons.thumb_up_alt,
                                         size: 16, color: Colors.grey),
                                     const SizedBox(width: 4),
-                                    Text(post['likes'] ?? '0'),
+                                    Text(post['likes']?.toString() ?? '0'),
                                     const SizedBox(width: 16),
                                     const Icon(Icons.comment,
                                         size: 16, color: Colors.grey),
                                     const SizedBox(width: 4),
-                                    Text(post['comments'] ?? '0'),
+                                    Text(post['comments']?.toString() ?? '0'),
                                   ],
                                 ),
                               ],
@@ -1641,8 +1648,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       },
                     ),
 
-                  // ✅ SIDE-BY-SIDE BUTTONS
                   const SizedBox(height: 10),
+
+                  // ✅ SIDE-BY-SIDE BUTTONS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -1809,12 +1817,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _isPosting ? null : _submitPost,
-              style:
-              ElevatedButton.styleFrom(backgroundColor: Colors.deepOrange),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepOrange,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+              ),
               child: _isPosting
                   ? const CircularProgressIndicator(color: Colors.white)
-                  : const Text("Post",
-                  style: TextStyle(color: Colors.white)),
+                  : const Text(
+                "Post",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
@@ -1826,8 +1839,75 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
 
 
-class ContactUsScreen extends StatelessWidget {
+
+
+
+
+class ContactUsScreen extends StatefulWidget {
   const ContactUsScreen({super.key});
+
+  @override
+  State<ContactUsScreen> createState() => _ContactUsScreenState();
+}
+
+class _ContactUsScreenState extends State<ContactUsScreen> {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _surnameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _messageController = TextEditingController();
+  bool _isLoading = false;
+
+  // ✅ Change to your local IP
+  final String apiUrl = "http://10.1.21.175/riderekta/contact.php";
+
+  Future<void> _submitForm() async {
+    final name = _nameController.text.trim();
+    final surname = _surnameController.text.trim();
+    final email = _emailController.text.trim();
+    final message = _messageController.text.trim();
+
+    if (name.isEmpty || surname.isEmpty || email.isEmpty || message.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please fill in all fields")),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: {
+          "name": name,
+          "surname": surname,
+          "email": email,
+          "message": message,
+        },
+      );
+
+      final data = jsonDecode(response.body);
+      if (data["success"] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("✅ ${data["message"]}")),
+        );
+        _nameController.clear();
+        _surnameController.clear();
+        _emailController.clear();
+        _messageController.clear();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Failed to send message: $e")),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1843,51 +1923,43 @@ class ContactUsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Name',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
                   hintText: 'Enter your first name',
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Surname',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Surname', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const TextField(
-                decoration: InputDecoration(
+              TextField(
+                controller: _surnameController,
+                decoration: const InputDecoration(
                   hintText: 'Enter your last name',
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Email',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Email', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const TextField(
+              TextField(
+                controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Enter your email address',
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Message',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Message', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              const TextField(
+              TextField(
+                controller: _messageController,
                 maxLines: 5,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: 'Enter your message here',
                   border: OutlineInputBorder(),
                 ),
@@ -1896,18 +1968,18 @@ class ContactUsScreen extends StatelessWidget {
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: Color(0xFFFF9800),
                     foregroundColor: Colors.white,
-                    padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 12,
+                    ),
                     textStyle: const TextStyle(fontSize: 16),
                   ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Your message has been sent!")),
-                    );
-                  },
-                  child: const Text('Submit'),
+                  onPressed: _isLoading ? null : _submitForm,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Submit'),
                 ),
               ),
               const SizedBox(height: 20),
@@ -1949,4 +2021,3 @@ class _DashboardCard extends StatelessWidget {
     );
   }
 }
-

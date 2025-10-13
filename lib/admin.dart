@@ -147,8 +147,8 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
   // ⚙️ Replace with your actual local IP
   // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-  final String apiUrl = "http://192.168.254.116/riderekta/admin_feedback.php";
-  final String baseUrl = "http://192.168.254.116/riderekta/uploads/";
+  final String apiUrl = "http://10.1.21.175/riderekta/admin_feedback.php";
+  final String baseUrl = "http://10.1.21.175/riderekta/uploads/";
 
   Future<void> fetchFeedback() async {
     try {
