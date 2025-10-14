@@ -20,6 +20,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+
 // ------------------------------------------------------------
 // 🧩 ADMIN DASHBOARD
 // ------------------------------------------------------------
@@ -36,26 +37,36 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Admin Dashboard"),
-        actions: [
-          IconButton(icon: Icon(Icons.logout), onPressed: _logout),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildManageAppContent(),
-            SizedBox(height: 20),
-            _buildManageUsers(),
-            SizedBox(height: 20),
-            _buildManageReports(),
-            SizedBox(height: 20),
-            _buildFeedbackOverview(),
+    return WillPopScope(
+      onWillPop: () async {
+        // Disable back navigation only on the AdminDashboard
+        return false;  // Returning false disables the default back action
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text("Admin Dashboard"),
+          automaticallyImplyLeading: false, // This removes the back arrow
+          actions: [
+            IconButton(
+              icon: Icon(Icons.logout),
+              onPressed: () => _showLogoutConfirmationDialog(), // Call the dialog
+            ),
           ],
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildManageAppContent(),
+              SizedBox(height: 20),
+              _buildManageUsers(),
+              SizedBox(height: 20),
+              _buildManageReports(),
+              SizedBox(height: 20),
+              _buildFeedbackOverview(),
+            ],
+          ),
         ),
       ),
     );
@@ -100,7 +111,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onPressed: _navigateToFeedbackManagement,
           ),
         ),
-
       ],
     ),
   );
@@ -117,8 +127,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void _navigateToFeedbackManagement() => Navigator.push(
       context, MaterialPageRoute(builder: (_) => FeedbackManagementScreen()));
 
-  void _logout() => Navigator.pushReplacement(
-      context, MaterialPageRoute(builder: (_) => LoginScreen()));
+  // Logout Confirmation Dialog
+  void _showLogoutConfirmationDialog() {
+    showDialog(
+      context: context, // Use the widget's context
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text("Are you sure you want to log out?"),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext); // Close the dialog
+              },
+              child: const Text("No"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext); // Close the dialog first
+                Navigator.pushReplacement(
+                  context, // Use the outer widget's context for navigation
+                  MaterialPageRoute(builder: (_) => LoginScreen()),
+                );
+              },
+              child: const Text("Yes", style: TextStyle(color: Colors.deepOrange)),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 // ------------------------------------------------------------
@@ -137,8 +174,8 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
   // ⚙️ Replace with your actual local IP
   // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-  final String apiUrl = "http://10.1.21.124/riderekta/admin_feedback.php";
-  final String baseUrl = "http://10.1.21.124/riderekta/uploads/";
+  final String apiUrl = "https://riderekta.infinityfreeapp.com/admin_feedback.php";
+  final String baseUrl = "https://riderekta.infinityfreeapp.com/uploads/";
 
   Future<void> fetchFeedback() async {
     try {
@@ -255,6 +292,8 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
     );
   }
 }
+
+// LOGOUT CONFIRMATION DIALOG MOVED INSIDE ADMIN DASHBOARD CLASS (REMOVED FROM HERE)
 
 // ------------------------------------------------------------
 // 🧩 CONTENT MANAGEMENT
@@ -374,5 +413,3 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 }
-
-
