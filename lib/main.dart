@@ -448,109 +448,233 @@ void _showLogoutConfirmationDialog(BuildContext context) {
   );
 }
 
-///////////////////// BENEFITS SECTION /////////////////////////////
+//////////// BENEFITS SECTION //////////////////////
 class BenefitsScreen extends StatelessWidget {
   const BenefitsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final Color mainColor = Colors.orange.shade700;
+
+    final List<Map<String, dynamic>> features = [
+      {
+        "icon": Icons.directions_bike,
+        "title": "Optimized Routes",
+        "description": "Customized routes optimized for e-bikes.",
+      },
+      {
+        "icon": Icons.map_outlined,
+        "title": "Safe Cycling Lanes",
+        "description": "Highlighting protected lanes and safe paths.",
+      },
+      {
+        "icon": Icons.remove_road_outlined,
+        "title": "Avoid Unsafe Roads",
+        "description": "Avoiding unsafe or high-traffic areas.",
+      },
+      {
+        "icon": Icons.groups_3_outlined,
+        "title": "Community Forums",
+        "description": "Fostering vibrant rider community forums.",
+      },
+      {
+        "icon": Icons.feedback_outlined,
+        "title": "Feedback Channels",
+        "description": "Engaging feedback from active riders.",
+      },
+      {
+        "icon": Icons.support_agent_outlined,
+        "title": "Direct Support",
+        "description": "Responsive and helpful support anytime.",
+      },
+    ];
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Intro paragraph ---
-            const Text(
-              "Riderekta is a dedicated e-bike navigation and community app designed to make electric bike commuting smarter, safer, and more enjoyable. The app provides customized routes optimized for e-bikes, highlighting safe cycling lanes and avoiding unsafe or high-traffic roads. Beyond navigation, Riderekta fosters a vibrant rider community, offering features such as forums, feedback channels, and direct support.",
-              style: TextStyle(
-                fontSize: 15,
-                height: 1.6,
-                color: Colors.black87,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Centered BENEFITS Title
+              const Center(
+                child: Text(
+                  "BENEFITS",
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepOrange,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
+              const SizedBox(height: 18),
 
-            // --- Benefit 1 ---
-            _buildBenefit(
-              icon: Icons.group,
-              title: "Ride Together, Grow Together",
-              description:
-              "Join a vibrant network of e-bike enthusiasts! Access dedicated forums, local rider groups, and real-time feedback channels. Get direct support, share tips, and find the best trails from a community that understands e-biking.",
-            ),
+              // Intro Card
+              _buildInfoCard(
+                title: "Riderekta",
+                description:
+                "is an e-bike navigation and community app designed to make electric bike commuting smarter, safer, and more enjoyable.",
+                mainColor: mainColor,
+              ),
+              const SizedBox(height: 24),
 
-            const SizedBox(height: 24),
-            const Divider(),
+              // Section Title
+              const Text(
+                "Why Choose Riderekta",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 12),
 
-            // --- Benefit 2 ---
-            _buildBenefit(
-              icon: Icons.map,
-              title: "Optimized E-Bike Navigation",
-              description:
-              "Stop guessing. Riderekta provides customized routes that maximize safety and enjoyment. We prioritize dedicated cycling lanes, low-traffic roads, and legal e-bike paths, ensuring you effortlessly avoid highways and unsafe areas.",
-            ),
-
-            const SizedBox(height: 24),
-            const Divider(),
-
-            // --- Benefit 3 ---
-            _buildBenefit(
-              icon: Icons.pedal_bike,
-              title: "Commuting Made Enjoyable",
-              description:
-              "Say goodbye to range anxiety and complex maps. Our intuitive interface allows for quick route planning, while our optimization features help you get the most out of your battery and your ride. Enjoy a stress-free, scenic, and eco-friendly commute every time.",
-            ),
-          ],
+              // Features List
+              ...features.map((feature) {
+                return _buildFeatureCard(
+                  icon: feature["icon"],
+                  title: feature["title"],
+                  description: feature["description"],
+                  mainColor: mainColor,
+                );
+              }),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  // Info Card
+  Widget _buildInfoCard({
+    required String title,
+    required String description,
+    required Color mainColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.electric_bike,
+              size: 30,
+              color: mainColor,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.black87,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildBenefit({
+  // Feature Card
+  Widget _buildFeatureCard({
     required IconData icon,
     required String title,
     required String description,
+    required Color mainColor,
   }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 34,
-          color: Colors.orange.shade700,
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.5,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
-        ),
-      ],
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              size: 30,
+              color: mainColor,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
-
 
 
 // ✅ Updated Settings Screen with Editable Fields
