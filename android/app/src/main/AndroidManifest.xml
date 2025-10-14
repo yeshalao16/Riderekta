@@ -9,9 +9,10 @@
     <!-- <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/> -->
 
     <application
-        android:label="flutter_application_1"
+        android:label="Riderekta"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"> <!-- ✅ ADD THIS LINE -->
 
         <activity
             android:name=".MainActivity"

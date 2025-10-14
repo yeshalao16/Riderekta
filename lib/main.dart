@@ -12,11 +12,13 @@ import 'RouteHistoryScreen.dart';
 // API endpoint
 // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-const String apiUrl = "http://10.1.21.124/riderekta/login.php";
-const String registerUrl = "http://10.1.21.124/register.php";
-const String updateProfileUrl = "http://10.1.21.124/update_profile.php";
-const String createPostUrl = "http://10.1.21.124/riderekta/create_post.php";
-const String getPostsUrl = "http://10.1.21.124/riderekta/get_posts.php";
+const String apiUrl = "http://192.168.254.116/riderekta/login.php";
+const String registerUrl = "http://192.168.254.116/riderekta/register.php";
+const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
+const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
+const String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
+
 
 
 
@@ -135,6 +137,7 @@ class _MainScreenState extends State<MainScreen>
     );
   }
 }
+
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -288,12 +291,6 @@ class OurTeamScreen extends StatelessWidget {
         'Developed by a group of innovative students, Riderekta reflects our passion for technology and our commitment to improving everyday travel experiences.';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Our Team"),
-        centerTitle: true,
-        backgroundColor: Color(0xFFFF9800),
-        elevation: 0,
-      ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
@@ -574,8 +571,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-  final String getUserUrl = "http://10.1.21.124/riderekta/get_user.php";
-  final String updateProfileUrl = "http://10.1.21.124/riderekta/update_profile.php";
+  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
+  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
 
   @override
   void initState() {
@@ -705,6 +702,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 }
 
+
+
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -717,12 +717,21 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+  // ✅ Update this to your actual API endpoint
+  final String apiUrl = "http://192.168.254.116/riderekta/login.php";
 
   Future<void> login() async {
     String email = _emailController.text.trim();
     String password = _passwordController.text.trim();
 
-    // Simple admin login check
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please enter email and password")),
+      );
+      return;
+    }
+
+    // ✅ Simple Admin Login
     if (email == 'admin@admin.com' && password == 'admin') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("✅ Admin login successful!")),
@@ -735,7 +744,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Otherwise, proceed with API login
+    // ✅ Regular user login (API)
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -771,7 +780,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 👇 Add this function for quick login
+  // 🚀 Quick Login (No SQL)
   void quickLogin() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("🚀 Quick login successful!")),
@@ -780,98 +789,119 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => UserDashboard(email: "guest@demo.com"),
+        builder: (context) => const UserDashboard(email: "guest@demo.com"),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+    return WillPopScope(
+      onWillPop: () async {
+        // 👇 Redirect back to home instead of previous dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+        return false; // Prevent default back behavior
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text("Login")),
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 🔹 Email field
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: "Email",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  onPressed: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
-                  },
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
 
-            // Normal Login Button
-            ElevatedButton(
-              onPressed: login,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepOrange,
-              ),
-              child: const Text(
-                "Login",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 10),
-
-            // 👇 Quick Login Button
-            OutlinedButton.icon(
-              onPressed: quickLogin,
-              icon: const Icon(Icons.flash_on, color: Colors.deepOrange),
-              label: const Text(
-                "Quick Login (No SQL)",
-                style: TextStyle(color: Colors.deepOrange),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RegisterScreen(),
+              // 🔹 Password field
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                );
-              },
-              child: const Text(
-                "Don't have an account? Sign Up",
-                style: TextStyle(color: Colors.deepOrange),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
               ),
-            ),
-          ],
+
+              const SizedBox(height: 20),
+
+              // 🔹 Login button
+              ElevatedButton(
+                onPressed: login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
+                ),
+                child: const Text(
+                  "Login",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔹 Quick login
+              OutlinedButton.icon(
+                onPressed: quickLogin,
+                icon: const Icon(Icons.flash_on, color: Colors.deepOrange),
+                label: const Text(
+                  "Quick Login (No SQL)",
+                  style: TextStyle(color: Colors.deepOrange),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔹 Register link
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Don't have an account? Sign Up",
+                  style: TextStyle(color: Colors.deepOrange),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
 
 
 
@@ -1295,7 +1325,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     try {
       // If testing on Android emulator, use 10.0.2.2
       // If testing on Physcial device, use 192.168.254.x
-      final url = Uri.parse("http://10.1.21.124/riderekta/submit_feedback.php");
+      final url = Uri.parse("http://192.168.254.116/riderekta/submit_feedback.php");
 
       var request = http.MultipartRequest('POST', url);
       request.fields['type'] = selectedType.isEmpty ? "General" : selectedType;
@@ -1432,7 +1462,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
               Center(
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: Color(0xFFFF9800),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
                     textStyle: const TextStyle(fontSize: 16),
@@ -1904,7 +1934,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   bool _isLoading = false;
 
   // ✅ Change to your local IP
-  final String apiUrl = "http://10.1.21.175/riderekta/contact.php";
+  final String apiUrl = "http://192.168.254.116/riderekta/contact.php";
 
   Future<void> _submitForm() async {
     final name = _nameController.text.trim();

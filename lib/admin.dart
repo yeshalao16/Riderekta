@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'main.dart';
@@ -30,11 +28,6 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  final int totalUsers = 3000;
-  int userActivityIssues = 40;
-  int routeUsageIssues = 35;
-  int generalFeedback = 25;
-
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -65,6 +58,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               _buildManageReports(),
               SizedBox(height: 20),
               _buildFeedbackOverview(),
+              SizedBox(height: 20),
+              _buildContactMessages(),
             ],
           ),
         ),
@@ -74,44 +69,50 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildManageAppContent() => Card(
     child: ListTile(
-      title: Text("Manage App Content"),
-      subtitle: Text(
+      title: const Text("Manage App Content"),
+      subtitle: const Text(
           "Admins can add, edit, or update app content like About Us or Benefits."),
-      trailing: Icon(Icons.edit),
+      trailing: const Icon(Icons.edit),
       onTap: _navigateToContentManagement,
     ),
   );
 
   Widget _buildManageUsers() => Card(
     child: ListTile(
-      title: Text("Manage Users"),
-      subtitle: Text("Admins can view, update, or deactivate user accounts."),
-      trailing: Icon(Icons.manage_accounts),
+      title: const Text("Manage Users"),
+      subtitle:
+      const Text("Admins can view, update, or deactivate user accounts."),
+      trailing: const Icon(Icons.manage_accounts),
       onTap: _navigateToUserManagement,
     ),
   );
 
   Widget _buildManageReports() => Card(
     child: ListTile(
-      title: Text("Manage Reports"),
-      subtitle: Text(
+      title: const Text("Manage Reports"),
+      subtitle: const Text(
           "Admins can generate reports based on user activity, route usage, and feedback."),
-      trailing: Icon(Icons.bar_chart),
+      trailing: const Icon(Icons.bar_chart),
       onTap: _navigateToReports,
     ),
   );
 
   Widget _buildFeedbackOverview() => Card(
-    child: Column(
-      children: [
-        ListTile(
-          title: Text("Feedback Overview"),
-          trailing: IconButton(
-            icon: Icon(Icons.feedback),
-            onPressed: _navigateToFeedbackManagement,
-          ),
-        ),
-      ],
+    child: ListTile(
+      title: const Text("Feedback Overview"),
+      subtitle: const Text("View user feedback with optional attachments."),
+      trailing: const Icon(Icons.feedback),
+      onTap: _navigateToFeedbackManagement,
+    ),
+  );
+
+  Widget _buildContactMessages() => Card(
+    child: ListTile(
+      title: const Text("Contact Messages"),
+      subtitle:
+      const Text("View all contact form submissions from users."),
+      trailing: const Icon(Icons.contact_mail),
+      onTap: _navigateToContactMessages,
     ),
   );
 
@@ -126,6 +127,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _navigateToFeedbackManagement() => Navigator.push(
       context, MaterialPageRoute(builder: (_) => FeedbackManagementScreen()));
+
+  void _navigateToContactMessages() => Navigator.push(
+      context, MaterialPageRoute(builder: (_) => ContactMessagesScreen()));
+
+
 
   // Logout Confirmation Dialog
   void _showLogoutConfirmationDialog() {
@@ -171,11 +177,8 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
   bool isLoading = true;
   List<dynamic> feedbackList = [];
 
-  // ⚙️ Replace with your actual local IP
-  // If testing on Android emulator, use 10.0.2.2
-// If testing on Physcial device, use 192.168.254.x
-  final String apiUrl = "https://riderekta.infinityfreeapp.com/admin_feedback.php";
-  final String baseUrl = "https://riderekta.infinityfreeapp.com/uploads/";
+  final String apiUrl = "http://192.168.254.116/riderekta/admin_feedback.php";
+  final String baseUrl = "http://192.168.254.116/riderekta/uploads/";
 
   Future<void> fetchFeedback() async {
     try {
@@ -191,7 +194,6 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
           setState(() => isLoading = false);
         }
       } else {
-        print("HTTP Error: ${response.statusCode}");
         setState(() => isLoading = false);
       }
     } catch (e) {
@@ -215,8 +217,6 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
     final imageUrl = attachmentPath.startsWith("http")
         ? attachmentPath
         : baseUrl + attachmentPath;
-
-    print("🖼️ Loading image: $imageUrl");
 
     showDialog(
       context: context,
@@ -296,33 +296,204 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
 // LOGOUT CONFIRMATION DIALOG MOVED INSIDE ADMIN DASHBOARD CLASS (REMOVED FROM HERE)
 
 // ------------------------------------------------------------
+// 🧩 CONTACT MESSAGES WITH REPLY FUNCTION
+// ------------------------------------------------------------
+class ContactMessagesScreen extends StatefulWidget {
+  @override
+  _ContactMessagesScreenState createState() => _ContactMessagesScreenState();
+}
+
+class _ContactMessagesScreenState extends State<ContactMessagesScreen> {
+  bool isLoading = true;
+  List<dynamic> contactList = [];
+
+  final String apiUrl = "http://192.168.254.116/riderekta/admin_getcontact.php";
+  final String replyUrl = "http://192.168.254.116/riderekta/admin_replycontact.php";
+
+  Future<void> fetchContacts() async {
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data["success"] == true) {
+          setState(() {
+            contactList = data["contacts"];
+            isLoading = false;
+          });
+        } else {
+          setState(() => isLoading = false);
+        }
+      } else {
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print("Error fetching contact messages: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> sendReply(int id, String reply) async {
+    try {
+      final response = await http.post(
+        Uri.parse(replyUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"id": id, "reply": reply}),
+      );
+
+      final data = jsonDecode(response.body);
+      if (data["success"] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Reply sent successfully!")),
+        );
+        fetchContacts();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed: ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      print("Error sending reply: $e");
+    }
+  }
+
+  void _showReplyDialog(int id, String userEmail, String? currentReply) {
+    final TextEditingController replyController =
+    TextEditingController(text: currentReply ?? "");
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text("Reply to $userEmail"),
+        content: TextField(
+          controller: replyController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: "Your reply",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              sendReply(id, replyController.text);
+            },
+            child: const Text("Send Reply"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchContacts();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Contact Messages"),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: fetchContacts),
+        ],
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : contactList.isEmpty
+          ? const Center(child: Text("No contact messages found."))
+          : RefreshIndicator(
+        onRefresh: fetchContacts,
+        child: ListView.builder(
+          itemCount: contactList.length,
+          itemBuilder: (context, index) {
+            final contact = contactList[index];
+            return Card(
+              margin: const EdgeInsets.symmetric(
+                  vertical: 8, horizontal: 12),
+              child: ListTile(
+                title: Text(
+                  "${contact["name"] ?? "No name"} ${contact["surname"] ?? ""}",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("📧 ${contact["email"] ?? "No email"}"),
+                    const SizedBox(height: 4),
+                    Text("💬 ${contact["message"] ?? "No message"}"),
+                    const SizedBox(height: 4),
+                    if (contact["reply"] != null &&
+                        contact["reply"].toString().isNotEmpty)
+                      Container(
+                        margin:
+                        const EdgeInsets.only(top: 8, bottom: 4),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          "Admin Reply: ${contact["reply"]}",
+                          style: const TextStyle(
+                              color: Colors.black87,
+                              fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                    Text("🕒 ${contact["created_at"] ?? ""}"),
+                  ],
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.reply),
+                  onPressed: () => _showReplyDialog(
+                    int.parse(contact["id"].toString()),
+                    contact["email"] ?? "",
+                    contact["reply"],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+
+// ------------------------------------------------------------
 // 🧩 CONTENT MANAGEMENT
 // ------------------------------------------------------------
 class ContentManagementScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Manage App Content")),
+      appBar: AppBar(title: const Text("Manage App Content")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
             TextField(
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                   labelText: "About Us", border: OutlineInputBorder()),
               maxLines: 4,
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextField(
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                   labelText: "Benefits", border: OutlineInputBorder()),
               maxLines: 4,
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () => ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text("Content Saved!"))),
-              child: Text("Save"),
+                  .showSnackBar(const SnackBar(content: Text("Content Saved!"))),
+              child: const Text("Save"),
             )
           ],
         ),
@@ -348,7 +519,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Manage Users")),
+      appBar: AppBar(title: const Text("Manage Users")),
       body: ListView.builder(
         itemCount: users.length,
         itemBuilder: (context, index) {
@@ -381,7 +552,7 @@ class ReportsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     String? selectedReport;
     return Scaffold(
-      appBar: AppBar(title: Text("Generate Reports")),
+      appBar: AppBar(title: const Text("Generate Reports")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: StatefulBuilder(builder: (context, setState) {
@@ -389,22 +560,23 @@ class ReportsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               DropdownButton<String>(
-                hint: Text("Select Report Type"),
+                hint: const Text("Select Report Type"),
                 value: selectedReport,
                 onChanged: (value) => setState(() => selectedReport = value),
                 items: reports
                     .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                     .toList(),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               ElevatedButton(
                 onPressed: selectedReport == null
                     ? null
                     : () => ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                      content: Text("$selectedReport Report Generated!")),
+                      content:
+                      Text("$selectedReport Report Generated!")),
                 ),
-                child: Text("Generate Report"),
+                child: const Text("Generate Report"),
               )
             ],
           );
