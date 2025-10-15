@@ -177,8 +177,8 @@ class _FeedbackManagementScreenState extends State<FeedbackManagementScreen> {
   bool isLoading = true;
   List<dynamic> feedbackList = [];
 
-  final String apiUrl = "http://172.20.10.4/riderekta/admin_feedback.php";
-  final String baseUrl = "http://172.20.10.4/riderekta/uploads/";
+  final String apiUrl = "http://10.147.196.1/riderekta/admin_feedback.php";
+  final String baseUrl = "http://10.147.196.1/riderekta/uploads/";
 
   Future<void> fetchFeedback() async {
     try {
@@ -307,8 +307,8 @@ class _ContactMessagesScreenState extends State<ContactMessagesScreen> {
   bool isLoading = true;
   List<dynamic> contactList = [];
 
-  final String apiUrl = "http://172.20.10.4/riderekta/admin_getcontact.php";
-  final String replyUrl = "http://172.20.10.4/riderekta/admin_replycontact.php";
+  final String apiUrl = "http://10.147.196.1/riderekta/admin_getcontact.php";
+  final String replyUrl = "http://10.147.196.1/riderekta/admin_replycontact.php";
 
   Future<void> fetchContacts() async {
     try {

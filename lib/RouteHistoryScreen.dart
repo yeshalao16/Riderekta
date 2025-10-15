@@ -44,7 +44,6 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_forever),
-            tooltip: "Clear Route History",
             onPressed: _routeHistory.isNotEmpty
                 ? () {
               showDialog(
@@ -84,32 +83,26 @@ class _RouteHistoryScreenState extends State<RouteHistoryScreen> {
         itemCount: _routeHistory.length,
         itemBuilder: (context, index) {
           final route = _routeHistory[index];
-
-          // Support both old and new saved data formats
-          final startName = route['startName'] ?? route['start'] ?? "Unknown Start";
-          final endName = route['endName'] ?? route['end'] ?? "Unknown End";
-          final distance = route['distance'] ?? "N/A";
-          final duration = route['duration'] ?? "N/A";
-          final timestamp = route['timestamp'] ?? "Unknown Time";
-
           return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            margin:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             elevation: 2,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+                borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              leading: const Icon(Icons.route, color: Colors.deepOrange),
+              leading: const Icon(Icons.route, color: Colors.blue),
               title: Text(
-                "$startName → $endName",
+                "${route['startName']} → ${route['endName']}",
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
-                "Distance: $distance\n"
-                    "Duration: $duration\n"
-                    "Date: $timestamp",
-                style: const TextStyle(height: 1.4),
+                "Distance: ${route['distance']} km\n"
+                    "Duration: ${route['duration']} mins\n"
+                    "Date: ${route['timestamp']}",
               ),
+              onTap: () {
+                Navigator.pop(context, route);
+              },
             ),
           );
         },

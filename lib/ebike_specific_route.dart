@@ -35,10 +35,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   List<Map<String, dynamic>> _startSuggestions = [];
   List<Map<String, dynamic>> _endSuggestions = [];
 
-  // 🆕 Route status
   String routeStatus = "Start Route";
-
-  // 🆕 subscription to location stream
   StreamSubscription<Position>? _positionSubscription;
 
   @override
@@ -53,7 +50,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     super.dispose();
   }
 
-  // 🗺️ Get user's country for localized suggestions
   Future<void> _getUserCountry() async {
     try {
       final pos = await Geolocator.getCurrentPosition();
@@ -71,7 +67,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     }
   }
 
-  // 🔍 Fetch search suggestions
   Future<List<Map<String, dynamic>>> _fetchSuggestions(String query) async {
     if (query.isEmpty) return [];
     final countryParam =
@@ -87,7 +82,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     return [];
   }
 
-  // 🟢 When selecting start suggestion
   void _onStartSuggestionTap(Map<String, dynamic> place) {
     final lat = double.parse(place['lat']);
     final lon = double.parse(place['lon']);
@@ -102,7 +96,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     if (startLocation != null && dropOffLocation != null) _showEBikeRoute();
   }
 
-  // 🔴 When selecting destination suggestion
   void _onEndSuggestionTap(Map<String, dynamic> place) {
     final lat = double.parse(place['lat']);
     final lon = double.parse(place['lon']);
@@ -117,7 +110,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     if (startLocation != null && dropOffLocation != null) _showEBikeRoute();
   }
 
-  // 📍 Use current location as start
   Future<void> _getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -146,7 +138,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     _mapController.move(loc, 15);
   }
 
-  // 🗺️ User taps on map → sets destination
   void _onMapTap(LatLng pos) {
     if (startLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -161,7 +152,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     _showEBikeRoute();
   }
 
-  // 🚲 Fetch and display route (with orange bike route)
   Future<void> _showEBikeRoute() async {
     if (startLocation == null || dropOffLocation == null) return;
 
@@ -170,7 +160,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       routePoints.clear();
       distanceText = null;
       durationText = null;
-      routeStatus = "Start Route"; // 🆕 Reset to Start
+      routeStatus = "Start Route";
     });
 
     try {
@@ -222,7 +212,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     );
   }
 
-  // 💾 Save route to SharedPreferences
   Future<void> _saveRouteToHistory(double distance, double duration) async {
     try {
       String startName = await _reverseGeocode(startLocation!);
@@ -264,7 +253,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     return "Unknown location";
   }
 
-  // 🔄 Reset Route
   void _resetRoute() {
     setState(() {
       startLocation = null;
@@ -272,19 +260,16 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       routePoints.clear();
       distanceText = null;
       durationText = null;
-      routeStatus = "Start Route"; // 🆕 Reset
+      routeStatus = "Start Route";
       _startController.clear();
       _endController.clear();
       _startSuggestions.clear();
       _endSuggestions.clear();
     });
-
-    // Cancel any ongoing subscription
     _positionSubscription?.cancel();
     _positionSubscription = null;
   }
 
-  // 🆕 Start route button pressed
   Future<void> _startRouteTracking() async {
     if (routePoints.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -292,22 +277,15 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       );
       return;
     }
-
-    // If already in progress, do nothing or provide feedback
-    if (routeStatus == "Route in Progress") {
-      return;
-    }
-
+    if (routeStatus == "Route in Progress") return;
     setState(() => routeStatus = "Route in Progress");
 
-    // Cancel previous subscription if any
     _positionSubscription?.cancel();
 
-    // Start listening to position updates
     _positionSubscription = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.best,
-        distanceFilter: 5, // update every ~5 meters
+        distanceFilter: 5,
       ),
     ).listen((pos) {
       if (mounted && dropOffLocation != null) {
@@ -317,12 +295,8 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
           dropOffLocation!.latitude,
           dropOffLocation!.longitude,
         );
-
-        // When within 30 meters, mark arrived
         if (distance < 30) {
           setState(() => routeStatus = "Destination Arrived");
-
-          // stop listening after arrival
           _positionSubscription?.cancel();
           _positionSubscription = null;
         }
@@ -330,7 +304,21 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     });
   }
 
-  // 🧭 UI BUILD
+  // 🆕 Load a route from history
+  void _loadRouteFromHistory(Map<String, dynamic> route) {
+    final start = LatLng(route['startLat'], route['startLon']);
+    final end = LatLng(route['endLat'], route['endLon']);
+
+    setState(() {
+      startLocation = start;
+      dropOffLocation = end;
+      _startController.text = route['startName'];
+      _endController.text = route['endName'];
+    });
+
+    _showEBikeRoute();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -340,13 +328,15 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: "View Route History",
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final selectedRoute = await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const RouteHistoryScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const RouteHistoryScreen()),
               );
+
+              if (selectedRoute != null) {
+                _loadRouteFromHistory(selectedRoute);
+              }
             },
           ),
           IconButton(
@@ -358,7 +348,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       ),
       body: Stack(
         children: [
-          // MAP
           Positioned.fill(
             child: FlutterMap(
               mapController: _mapController,
@@ -373,7 +362,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                   subdomains: const ['a', 'b', 'c'],
                 ),
-                // Orange route line
                 PolylineLayer(
                   polylines: [
                     Polyline(
@@ -406,8 +394,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
               ],
             ),
           ),
-
-          // SEARCH INPUTS
           Positioned(
             top: 10,
             left: 8,
@@ -449,8 +435,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
               ],
             ),
           ),
-
-          // DISTANCE/TIME INFO (responsive)
           if (distanceText != null && durationText != null)
             Positioned(
               bottom: 15,
@@ -491,8 +475,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                 ),
               ),
             ),
-
-          // 🆕 Route status + start button
           Positioned(
             bottom: 130,
             left: 15,
@@ -513,8 +495,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
               ],
             ),
           ),
-
-          // 🟠 LEGEND (bike lane info)
           Positioned(
             bottom: 80,
             right: 15,
@@ -536,7 +516,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                 children: const [
                   Icon(Icons.linear_scale, color: Colors.deepOrange, size: 20),
                   SizedBox(width: 6),
-                  Text("Bike Route", style: TextStyle(fontSize: 13)),
+                  Text("E-Bike Route", style: TextStyle(fontSize: 13)),
                 ],
               ),
             ),
@@ -546,7 +526,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     );
   }
 
-  // 🔽 Search field builder
   Widget _buildSearchField({
     required TextEditingController controller,
     required String hint,
@@ -563,7 +542,8 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
             controller: controller,
             decoration: InputDecoration(
               hintText: hint,
-              prefixIcon: Icon(isStart ? Icons.electric_bike_outlined : Icons.flag),
+              prefixIcon: Icon(
+                  isStart ? Icons.electric_bike_outlined : Icons.flag),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -601,7 +581,9 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
-                  onTap: () => isStart ? _onStartSuggestionTap(s) : _onEndSuggestionTap(s),
+                  onTap: () => isStart
+                      ? _onStartSuggestionTap(s)
+                      : _onEndSuggestionTap(s),
                 );
               },
             ),
