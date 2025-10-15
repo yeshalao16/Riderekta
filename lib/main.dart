@@ -12,12 +12,12 @@ import 'RouteHistoryScreen.dart';
 // API endpoint
 // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-const String apiUrl = "http://192.168.254.116/riderekta/login.php";
-const String registerUrl = "http://192.168.254.116/riderekta/register.php";
-const String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
-const String createPostUrl = "http://192.168.254.116/riderekta/create_post.php";
-const String getPostsUrl = "http://192.168.254.116/riderekta/get_posts.php";
-const String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
+const String apiUrl = "http://172.20.10.4/riderekta/login.php";
+const String registerUrl = "http://172.20.10.4/riderekta/register.php";
+const String updateProfileUrl = "http://172.20.10.4/riderekta/update_profile.php";
+const String createPostUrl = "http://172.20.10.4/riderekta/create_post.php";
+const String getPostsUrl = "http://172.20.10.4/riderekta/get_posts.php";
+const String getUserUrl = "http://172.20.10.4/riderekta/get_user.php";
 
 
 
@@ -695,8 +695,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // If testing on Android emulator, use 10.0.2.2
 // If testing on Physcial device, use 192.168.254.x
-  final String getUserUrl = "http://192.168.254.116/riderekta/get_user.php";
-  final String updateProfileUrl = "http://192.168.254.116/riderekta/update_profile.php";
+  final String getUserUrl = "http://172.20.10.4/riderekta/get_user.php";
+  final String updateProfileUrl = "http://172.20.10.4/riderekta/update_profile.php";
 
   @override
   void initState() {
@@ -842,7 +842,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
 
   // ✅ Update this to your actual API endpoint
-  final String apiUrl = "http://192.168.254.116/riderekta/login.php";
+  final String apiUrl = "http://172.20.10.4/riderekta/login.php";
 
   Future<void> login() async {
     String email = _emailController.text.trim();
@@ -1449,7 +1449,7 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     try {
       // If testing on Android emulator, use 10.0.2.2
       // If testing on Physcial device, use 192.168.254.x
-      final url = Uri.parse("http://192.168.254.116/riderekta/submit_feedback.php");
+      final url = Uri.parse("http://172.20.10.4/riderekta/submit_feedback.php");
 
       var request = http.MultipartRequest('POST', url);
       request.fields['type'] = selectedType.isEmpty ? "General" : selectedType;
@@ -2058,7 +2058,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   bool _isLoading = false;
 
   // ✅ Change to your local IP
-  final String apiUrl = "http://192.168.254.116/riderekta/contact.php";
+  final String apiUrl = "http://172.20.10.4/riderekta/contact.php";
 
   Future<void> _submitForm() async {
     final name = _nameController.text.trim();

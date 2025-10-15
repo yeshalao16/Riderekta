@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -34,10 +35,22 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
   List<Map<String, dynamic>> _startSuggestions = [];
   List<Map<String, dynamic>> _endSuggestions = [];
 
+  // 🆕 Route status
+  String routeStatus = "Start Route";
+
+  // 🆕 subscription to location stream
+  StreamSubscription<Position>? _positionSubscription;
+
   @override
   void initState() {
     super.initState();
     _getUserCountry();
+  }
+
+  @override
+  void dispose() {
+    _positionSubscription?.cancel();
+    super.dispose();
   }
 
   // 🗺️ Get user's country for localized suggestions
@@ -157,6 +170,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       routePoints.clear();
       distanceText = null;
       durationText = null;
+      routeStatus = "Start Route"; // 🆕 Reset to Start
     });
 
     try {
@@ -258,10 +272,61 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
       routePoints.clear();
       distanceText = null;
       durationText = null;
+      routeStatus = "Start Route"; // 🆕 Reset
       _startController.clear();
       _endController.clear();
       _startSuggestions.clear();
       _endSuggestions.clear();
+    });
+
+    // Cancel any ongoing subscription
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
+  }
+
+  // 🆕 Start route button pressed
+  Future<void> _startRouteTracking() async {
+    if (routePoints.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select a route first")),
+      );
+      return;
+    }
+
+    // If already in progress, do nothing or provide feedback
+    if (routeStatus == "Route in Progress") {
+      return;
+    }
+
+    setState(() => routeStatus = "Route in Progress");
+
+    // Cancel previous subscription if any
+    _positionSubscription?.cancel();
+
+    // Start listening to position updates
+    _positionSubscription = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 5, // update every ~5 meters
+      ),
+    ).listen((pos) {
+      if (mounted && dropOffLocation != null) {
+        final distance = Geolocator.distanceBetween(
+          pos.latitude,
+          pos.longitude,
+          dropOffLocation!.latitude,
+          dropOffLocation!.longitude,
+        );
+
+        // When within 30 meters, mark arrived
+        if (distance < 30) {
+          setState(() => routeStatus = "Destination Arrived");
+
+          // stop listening after arrival
+          _positionSubscription?.cancel();
+          _positionSubscription = null;
+        }
+      }
     });
   }
 
@@ -410,8 +475,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                   spacing: 10,
                   runSpacing: 6,
                   children: [
-                    const Icon(Icons.directions_bike,
-                        color: Colors.deepOrange),
+                    const Icon(Icons.directions_bike, color: Colors.deepOrange),
                     Text(
                       "Distance: $distanceText",
                       style: const TextStyle(
@@ -427,6 +491,28 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                 ),
               ),
             ),
+
+          // 🆕 Route status + start button
+          Positioned(
+            bottom: 130,
+            left: 15,
+            right: 15,
+            child: Column(
+              children: [
+                ElevatedButton(
+                  onPressed: _startRouteTracking,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepOrange,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(routeStatus,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          ),
 
           // 🟠 LEGEND (bike lane info)
           Positioned(
@@ -477,8 +563,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
             controller: controller,
             decoration: InputDecoration(
               hintText: hint,
-              prefixIcon:
-              Icon(isStart ? Icons.electric_bike_outlined : Icons.flag),
+              prefixIcon: Icon(isStart ? Icons.electric_bike_outlined : Icons.flag),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -516,9 +601,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
                     overflow: TextOverflow.ellipsis,
                     maxLines: 2,
                   ),
-                  onTap: () => isStart
-                      ? _onStartSuggestionTap(s)
-                      : _onEndSuggestionTap(s),
+                  onTap: () => isStart ? _onStartSuggestionTap(s) : _onEndSuggestionTap(s),
                 );
               },
             ),
