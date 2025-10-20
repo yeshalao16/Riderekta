@@ -6,18 +6,13 @@ import 'package:file_picker/file_picker.dart';
 import 'ebike_specific_route.dart';
 import 'admin.dart';
 import 'RouteHistoryScreen.dart';
+import 'api_endpoints.dart';
+import 'content_service.dart';
+import 'content_model.dart';
 
 
-//
-// API endpoint
-// If testing on Android emulator, use 10.0.2.2
-// If testing on Physcial device, use 192.168.254.x
-const String apiUrl = "http://10.147.196.1/riderekta/login.php";
-const String registerUrl = "http://10.147.196.1/riderekta/register.php";
-const String updateProfileUrl = "http://10.147.196.1/riderekta/update_profile.php";
-const String createPostUrl = "http://10.147.196.1/riderekta/create_post.php";
-const String getPostsUrl = "http://10.147.196.1/riderekta/get_posts.php";
-const String getUserUrl = "http://10.147.196.1/riderekta/get_user.php";
+
+
 
 
 
@@ -26,6 +21,9 @@ const String getUserUrl = "http://10.147.196.1/riderekta/get_user.php";
 void main() {
   runApp(const RiderektaApp());
 }
+
+
+
 
 class RiderektaApp extends StatelessWidget {
   const RiderektaApp({super.key});
@@ -138,9 +136,61 @@ class _MainScreenState extends State<MainScreen>
   }
 }
 
+// LOGOUT CONFIRMATION DIALOG ADDED HERE
+void _showLogoutConfirmationDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Are you sure you want to log out?"),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close the dialog
+            },
+            child: const Text("No"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              ); // Navigate to the login screen
+            },
+            child: const Text("Yes", style: TextStyle(color: Colors.deepOrange)),
+          ),
+        ],
+      );
+    },
+  );
+}
 
-class AboutScreen extends StatelessWidget {
+///////////////////// ABOUT US SECTION //////////////////////////////////
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  final _service = ContentService();
+  AppContent? content;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContent();
+  }
+
+  Future<void> _loadContent() async {
+    final data = await _service.fetchContent();
+    setState(() {
+      content = data;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -151,14 +201,22 @@ class AboutScreen extends StatelessWidget {
     final double totalHorizontal = (horizontalPadding * 2) + (containerMargin * 2) + spacing;
     final double imageWidth = (screenWidth - totalHorizontal) / 2;
 
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (content == null) {
+      return const Center(child: Text("Failed to load content"));
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(10.0),
       child: Column(
         children: [
           const SizedBox(height: 10),
-          const Text(
-            "RIDEREKTA",
-            style: TextStyle(
+          Text(
+            content!.aboutTitle, // ✅ from DB
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 28,
               color: Colors.deepOrange,
@@ -166,9 +224,9 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            "Your E-Bike's New Navigator",
-            style: TextStyle(color: Colors.grey, fontSize: 16),
+          Text(
+            content!.aboutSubtitle, // ✅ from DB
+            style: const TextStyle(color: Colors.grey, fontSize: 16),
           ),
           const SizedBox(height: 20),
           Container(
@@ -197,17 +255,17 @@ class AboutScreen extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Eco-Friendly Navigation',
-                    style: TextStyle(
+                  Text(
+                    content!.aboutText1, // ✅ from DB
+                    style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Get safe and legal e-bike routes that avoid highways and unsafe roads.',
-                    style: TextStyle(fontSize: 12),
+                  Text(
+                    content!.aboutText2, // ✅ from DB
+                    style: const TextStyle(fontSize: 12),
                   ),
                 ],
               ),
@@ -238,12 +296,12 @@ class AboutScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height:10),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 10.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10.0),
             child: Text(
-              'Continuous Improvement: Give feedback directly and help us improve Riderekta for everyone.',
+              content!.aboutFooter, // ✅ from DB
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 12,
               ),
@@ -259,32 +317,18 @@ class AboutScreen extends StatelessWidget {
 
 
 ///////////////////// TEAM SECTION //////////////////////////////////
+
+
 class OurTeamScreen extends StatelessWidget {
   const OurTeamScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final teamMembers = [
-      {
-        'name': 'Yesha Nicholai Lao',
-        'role': 'Scrum Master',
-        'image': 'assets/images/yesha.png',
-      },
-      {
-        'name': 'Geraldine Kaye Novilla',
-        'role': 'Back-End Developer',
-        'image': 'assets/images/geraldine.png',
-      },
-      {
-        'name': 'Kyla Fhe Sable',
-        'role': 'Front-End Developer',
-        'image': 'assets/images/kyla.png',
-      },
-      {
-        'name': 'Noel Bayona',
-        'role': 'Quality Assurance (QA)',
-        'image': 'assets/images/noel.png',
-      },
+      {'name': 'Yesha Nicholai Lao', 'role': 'Scrum Master', 'image': 'assets/images/yesha.png'},
+      {'name': 'Geraldine Kaye Novilla', 'role': 'Back-End Developer', 'image': 'assets/images/geraldine.png'},
+      {'name': 'Kyla Fhe Sable', 'role': 'Front-End Developer', 'image': 'assets/images/kyla.png'},
+      {'name': 'Noel Bayona', 'role': 'Quality Assurance (QA)', 'image': 'assets/images/noel.png'},
     ];
 
     const description =
@@ -297,15 +341,11 @@ class OurTeamScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 🔹 App Logo + Description
             FadeInDown(
               duration: const Duration(milliseconds: 800),
               child: Column(
                 children: [
-                  Image.asset(
-                    'assets/Riderekta.png',
-                    height: 120,
-                  ),
+                  Image.asset('assets/Riderekta.png', height: 120),
                   const SizedBox(height: 20),
                   const Text(
                     description,
@@ -321,24 +361,15 @@ class OurTeamScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 30),
-
-            // 🔹 Intro text
             FadeInUp(
               duration: const Duration(milliseconds: 800),
               child: const Text(
                 "Riderekta is built by a dedicated team of innovators working together to create a safer and greener way to travel:",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+                style: TextStyle(fontSize: 15, height: 1.6, fontWeight: FontWeight.w500, color: Colors.black87),
               ),
             ),
             const SizedBox(height: 24),
-
-            // 🔹 Animated Team Members
             Column(
               children: teamMembers.asMap().entries.map((entry) {
                 final index = entry.key;
@@ -347,46 +378,25 @@ class OurTeamScreen extends StatelessWidget {
                   duration: Duration(milliseconds: 600 + (index * 150)),
                   child: Container(
                     margin: const EdgeInsets.symmetric(vertical: 10),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
+                        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6, offset: const Offset(0, 3)),
                       ],
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
-                          radius: 30,
-                          backgroundImage: AssetImage(member['image']!),
-                        ),
+                        CircleAvatar(radius: 30, backgroundImage: AssetImage(member['image']!)),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                member['name']!,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                  color: Colors.black,
-                                ),
-                              ),
+                              Text(member['name']!, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               const SizedBox(height: 4),
-                              Text(
-                                member['role']!,
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 13,
-                                ),
-                              ),
+                              Text(member['role']!, style: const TextStyle(color: Colors.grey, fontSize: 13)),
                             ],
                           ),
                         ),
@@ -396,22 +406,6 @@ class OurTeamScreen extends StatelessWidget {
                 );
               }).toList(),
             ),
-
-            const SizedBox(height: 28),
-
-            // 🔹 Closing statement
-            FadeInUp(
-              duration: const Duration(milliseconds: 800),
-              child: const Text(
-                "Together, we combine our skills in project management, development, and testing to deliver a reliable and user-friendly app for e-bike riders.",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.6,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -419,75 +413,51 @@ class OurTeamScreen extends StatelessWidget {
   }
 }
 
-// LOGOUT CONFIRMATION DIALOG ADDED HERE
-void _showLogoutConfirmationDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text("Are you sure you want to log out?"),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close the dialog
-            },
-            child: const Text("No"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              ); // Navigate to the login screen
-            },
-            child: const Text("Yes", style: TextStyle(color: Colors.deepOrange)),
-          ),
-        ],
-      );
-    },
-  );
-}
+
+
 
 //////////// BENEFITS SECTION //////////////////////
-class BenefitsScreen extends StatelessWidget {
+class BenefitsScreen extends StatefulWidget {
   const BenefitsScreen({super.key});
+
+  @override
+  State<BenefitsScreen> createState() => _BenefitsScreenState();
+}
+
+class _BenefitsScreenState extends State<BenefitsScreen> {
+  final _service = ContentService();
+  AppContent? content;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContent();
+  }
+
+  Future<void> _loadContent() async {
+    final data = await _service.fetchContent();
+    setState(() {
+      content = data;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final Color mainColor = Colors.orange.shade700;
 
     final List<Map<String, dynamic>> features = [
-      {
-        "icon": Icons.directions_bike,
-        "title": "Optimized Routes",
-        "description": "Customized routes optimized for e-bikes.",
-      },
-      {
-        "icon": Icons.map_outlined,
-        "title": "Safe Cycling Lanes",
-        "description": "Highlighting protected lanes and safe paths.",
-      },
-      {
-        "icon": Icons.remove_road_outlined,
-        "title": "Avoid Unsafe Roads",
-        "description": "Avoiding unsafe or high-traffic areas.",
-      },
-      {
-        "icon": Icons.groups_3_outlined,
-        "title": "Community Forums",
-        "description": "Fostering vibrant rider community forums.",
-      },
-      {
-        "icon": Icons.feedback_outlined,
-        "title": "Feedback Channels",
-        "description": "Engaging feedback from active riders.",
-      },
-      {
-        "icon": Icons.support_agent_outlined,
-        "title": "Direct Support",
-        "description": "Responsive and helpful support anytime.",
-      },
+      {"icon": Icons.directions_bike, "title": "Optimized Routes", "description": "Customized routes optimized for e-bikes."},
+      {"icon": Icons.map_outlined, "title": "Safe Cycling Lanes", "description": "Highlighting protected lanes and safe paths."},
+      {"icon": Icons.remove_road_outlined, "title": "Avoid Unsafe Roads", "description": "Avoiding unsafe or high-traffic areas."},
+      {"icon": Icons.groups_3_outlined, "title": "Community Forums", "description": "Fostering vibrant rider community forums."},
+      {"icon": Icons.feedback_outlined, "title": "Feedback Channels", "description": "Engaging feedback from active riders."},
+      {"icon": Icons.support_agent_outlined, "title": "Direct Support", "description": "Responsive and helpful support anytime."},
     ];
+
+    if (isLoading) return const Center(child: CircularProgressIndicator());
+    if (content == null) return const Center(child: Text("Failed to load content"));
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -497,7 +467,6 @@ class BenefitsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Centered BENEFITS Title
               const Center(
                 child: Text(
                   "BENEFITS",
@@ -506,40 +475,27 @@ class BenefitsScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                     color: Colors.deepOrange,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(height: 18),
-
-              // Intro Card
-              _buildInfoCard(
-                title: "Riderekta",
-                description:
-                "is an e-bike navigation and community app designed to make electric bike commuting smarter, safer, and more enjoyable.",
-                mainColor: mainColor,
+              Text(
+                content!.benefitsIntro, // ✅ from DB
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 15, height: 1.6),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                content!.benefitsHighlights, // ✅ from DB
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-
-              // Section Title
-              const Text(
-                "Why Choose Riderekta",
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Features List
-              ...features.map((feature) {
-                return _buildFeatureCard(
-                  icon: feature["icon"],
-                  title: feature["title"],
-                  description: feature["description"],
-                  mainColor: mainColor,
-                );
-              }),
+              ...features.map((f) => _buildFeatureCard(
+                icon: f["icon"],
+                title: f["title"],
+                description: f["description"],
+                mainColor: mainColor,
+              )),
             ],
           ),
         ),
@@ -547,70 +503,6 @@ class BenefitsScreen extends StatelessWidget {
     );
   }
 
-  // Info Card
-  Widget _buildInfoCard({
-    required String title,
-    required String description,
-    required Color mainColor,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.electric_bike,
-              size: 30,
-              color: mainColor,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Feature Card
   Widget _buildFeatureCard({
     required IconData icon,
     required String title,
@@ -639,34 +531,16 @@ class BenefitsScreen extends StatelessWidget {
               color: Colors.orange.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: mainColor,
-            ),
+            child: Icon(icon, size: 30, color: mainColor),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
-                  ),
-                ),
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
-                Text(
-                  description,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: Colors.black87,
-                  ),
-                ),
+                Text(description, style: const TextStyle(fontSize: 14, height: 1.4, color: Colors.black87)),
               ],
             ),
           ),
@@ -675,6 +549,213 @@ class BenefitsScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+
+
+  final String apiUrl = ApiEndpoints.login;
+
+  Future<void> login() async {
+    String email = _emailController.text.trim();
+    String password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("⚠️ Please enter email and password")),
+      );
+      return;
+    }
+
+    // Simple Admin Login
+    if (email == 'admin@admin.com' && password == 'admin') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Admin login successful!")),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => AdminDashboard()),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        body: {
+          "email": email,
+          "password": password,
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data["success"] == true) {
+        // ✅ Login successful
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Login successful!")),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserDashboard(email: email),
+          ),
+        );
+      } else {
+        // ❌ Show any message from the server (including deactivation)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"]}")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Error: $e")),
+      );
+    }
+  }
+
+
+  // 🚀 Quick Login (No SQL)
+  void quickLogin() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("🚀 Quick login successful!")),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const UserDashboard(email: "guest@demo.com"),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        // 👇 Redirect back to home instead of previous dashboard
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+              (route) => false,
+        );
+
+        return false; // Prevent default back behavior
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text("Login")),
+        body: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // 🔹 Email field
+              TextField(
+                controller: _emailController,
+                decoration: InputDecoration(
+                  labelText: "Email",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // 🔹 Password field
+              TextField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // 🔹 Login button
+              ElevatedButton(
+                onPressed: login,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
+                ),
+                child: const Text(
+                  "Login",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔹 Quick login
+              OutlinedButton.icon(
+                onPressed: quickLogin,
+                icon: const Icon(Icons.flash_on, color: Colors.deepOrange),
+                label: const Text(
+                  "Quick Login (No SQL)",
+                  style: TextStyle(color: Colors.deepOrange),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔹 Register link
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterScreen(),
+                    ),
+                  );
+                },
+                child: const Text(
+                  "Don't have an account? Sign Up",
+                  style: TextStyle(color: Colors.deepOrange),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 
 
 // ✅ Updated Settings Screen with Editable Fields
@@ -693,10 +774,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool notifications = true;
   bool privacy = true;
 
-  // If testing on Android emulator, use 10.0.2.2
-// If testing on Physcial device, use 192.168.254.x
-  final String getUserUrl = "http://10.147.196.1/riderekta/get_user.php";
-  final String updateProfileUrl = "http://10.147.196.1/riderekta/update_profile.php";
+
+  final String getUserUrl = ApiEndpoints.getUser;
+  final String updateProfileUrl = ApiEndpoints.updateProfile;
+
 
   @override
   void initState() {
@@ -829,207 +910,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  bool _obscurePassword = true;
-
-  // ✅ Update this to your actual API endpoint
-  final String apiUrl = "http://10.147.196.1/riderekta/login.php";
-
-  Future<void> login() async {
-    String email = _emailController.text.trim();
-    String password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("⚠️ Please enter email and password")),
-      );
-      return;
-    }
-
-    // ✅ Simple Admin Login
-    if (email == 'admin@admin.com' && password == 'admin') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Admin login successful!")),
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => AdminDashboard()),
-      );
-      return;
-    }
-
-    // ✅ Regular user login (API)
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        body: {
-          "email": email,
-          "password": password,
-        },
-      );
-
-      print("Response: ${response.body}");
-      final data = jsonDecode(response.body);
-
-      if (data["success"]) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Login successful!")),
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => UserDashboard(email: email),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ ${data["message"]}")),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error: $e")),
-      );
-    }
-  }
-
-  // 🚀 Quick Login (No SQL)
-  void quickLogin() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("🚀 Quick login successful!")),
-    );
-
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const UserDashboard(email: "guest@demo.com"),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // 👇 Redirect back to home instead of previous dashboard
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
-        return false; // Prevent default back behavior
-      },
-      child: Scaffold(
-        appBar: AppBar(title: const Text("Login")),
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // 🔹 Email field
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // 🔹 Password field
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // 🔹 Login button
-              ElevatedButton(
-                onPressed: login,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepOrange,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 50, vertical: 12),
-                ),
-                child: const Text(
-                  "Login",
-                  style: TextStyle(color: Colors.white, fontSize: 16),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // 🔹 Quick login
-              OutlinedButton.icon(
-                onPressed: quickLogin,
-                icon: const Icon(Icons.flash_on, color: Colors.deepOrange),
-                label: const Text(
-                  "Quick Login (No SQL)",
-                  style: TextStyle(color: Colors.deepOrange),
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // 🔹 Register link
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const RegisterScreen(),
-                    ),
-                  );
-                },
-                child: const Text(
-                  "Don't have an account? Sign Up",
-                  style: TextStyle(color: Colors.deepOrange),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-
-
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -1046,8 +926,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> register() async {
     try {
-      final response = await http.post(
-        Uri.parse(registerUrl),
+      final response = await http.post(Uri.parse(ApiEndpoints.register),
         body: {
           "name": _nameController.text.trim(),
           "email": _emailController.text.trim(),
@@ -1447,9 +1326,8 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
     }
 
     try {
-      // If testing on Android emulator, use 10.0.2.2
-      // If testing on Physcial device, use 192.168.254.x
-      final url = Uri.parse("http://10.147.196.1/riderekta/submit_feedback.php");
+
+      final url = Uri.parse(ApiEndpoints.submitFeed);
 
       var request = http.MultipartRequest('POST', url);
       request.fields['type'] = selectedType.isEmpty ? "General" : selectedType;
@@ -1718,7 +1596,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Future<void> _fetchPosts() async {
     setState(() => isLoading = true);
     try {
-      final response = await http.get(Uri.parse(getPostsUrl));
+      final response = await http.get(Uri.parse(ApiEndpoints.getPosts));
       final data = jsonDecode(response.body);
 
       if (data["success"] == true && data["posts"] != null) {
@@ -1945,8 +1823,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     setState(() => _isPosting = true);
 
     try {
-      final response = await http.post(
-        Uri.parse(createPostUrl),
+      final response = await http.post(Uri.parse(ApiEndpoints.createPost),
         body: {
           "author": _isAnonymous ? "Anonymous" : widget.username,
           "title": _titleController.text.trim(),
@@ -2057,8 +1934,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
   final TextEditingController _messageController = TextEditingController();
   bool _isLoading = false;
 
-  // ✅ Change to your local IP
-  final String apiUrl = "http://10.147.196.1/riderekta/contact.php";
+
 
   Future<void> _submitForm() async {
     final name = _nameController.text.trim();
@@ -2077,7 +1953,7 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        Uri.parse(ApiEndpoints.userContact),
         body: {
           "name": name,
           "surname": surname,
