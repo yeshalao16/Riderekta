@@ -34,7 +34,12 @@ class ApiEndpoints {
   // 📊 Reports / Misc
   static const String generateReports = "$baseUrl/generate_reports.php";
 
-  // Content Managament
+  // Content Management
   static const String getContent = "$baseUrl/get_content.php";
   static const String updateContent = "$baseUrl/update_content.php";
+
+  static const String getRoute = "$baseUrl/fetch_routes.php";
+  static const String saveRoute = "$baseUrl/save_route.php";
+
+
 }

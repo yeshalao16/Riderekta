@@ -18,6 +18,7 @@ import 'content_model.dart';
 
 
 
+
 void main() {
   runApp(const RiderektaApp());
 }
@@ -1033,6 +1034,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 // After successful login
+
+
+
+
 class UserDashboard extends StatefulWidget {
   final String email; // email passed from login
   const UserDashboard({super.key, required this.email});
@@ -1042,246 +1047,270 @@ class UserDashboard extends StatefulWidget {
 }
 
 class _UserDashboardState extends State<UserDashboard> {
-  int selectedIndex = 0;
+  int totalRides = 0;
+  double totalDistance = 0;
+  double averageDuration = 0;
 
-  void _handleMenuSelection(String value) {
-    switch (value) {
-      case 'recent':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RouteHistoryScreen()),
-        );
-        break;
-      case 'specific':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const EBikeSpecificRouteScreen()),
-        );
-        break;
-      case 'safety':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const RouteSafetyScreen()),
-        );
-        break;
-      case 'settings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SettingsScreen(email: widget.email),
-          ),
-        );
-        break;
+  @override
+  void initState() {
+    super.initState();
+    _loadUserStats();
+  }
+
+  // Reload stats from API
+  Future<void> _loadUserStats() async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.getRoute),
+        body: {'email': widget.email},
+      );
+
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) {
+        final routes = List<Map<String, dynamic>>.from(data['routes']);
+        double distanceSum = 0;
+        double durationSum = 0;
+
+        for (var route in routes) {
+          distanceSum += double.tryParse(route['distance'] ?? '0') ?? 0;
+          durationSum += double.tryParse(route['duration'] ?? '0') ?? 0;
+        }
+
+        double avgDuration = routes.isNotEmpty ? durationSum / routes.length : 0;
+
+        setState(() {
+          totalRides = routes.length;
+          totalDistance = distanceSum;
+          averageDuration = avgDuration;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading user stats: $e");
     }
   }
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required int index,
-  }) {
-    final bool selected = index == selectedIndex;
+  // Menu navigation
+  void _handleMenuSelection(String value) async {
+    switch (value) {
+      case 'recent':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => RouteHistoryScreen(email: widget.email)),
+        );
+        break;
+      case 'specific':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  EBikeSpecificRouteScreen(userEmail: widget.email)),
+        );
+        break;
+      case 'settings':
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => SettingsScreen(email: widget.email)),
+        );
+        break;
+      case 'safety':
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => RouteSafetyScreen()),
+        );
+        if (result == true) _loadUserStats();
+        break;
+    }
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedIndex = index;
-        });
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: selected ? Colors.deepOrange : Colors.grey),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.deepOrange : Colors.grey,
-              fontSize: 12,
-              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
+    // Automatically refresh stats when returning from another screen
+    _loadUserStats();
   }
 
-  Future<bool> _onBackPressed() async {
-    // Show a confirmation dialog when the back button is pressed
-    return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Are you sure you want to exit?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
-    ) ??
-        false; // If the dialog returns null, treat it as false
-  }
 
   @override
   Widget build(BuildContext context) {
-    final username = widget.email.split('@')[0]; // Extract username before '@'
+    final username = widget.email.split('@')[0];
 
-    return WillPopScope(
-      onWillPop: _onBackPressed, // Intercept the back button
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false, // Remove the back button
-          backgroundColor: Colors.white,
-          elevation: 1,
-          title: Row(
-            children: [
-              // 🔹 Popup menu
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.menu, color: Colors.black),
-                color: const Color(0xFFFEF7FF),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                onSelected: _handleMenuSelection,
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'recent', child: Text('RECENT ROUTE HISTORY')),
-                  PopupMenuItem(value: 'specific', child: Text('E-BIKE SPECIFIC ROUTE')),
-                  PopupMenuItem(value: 'safety', child: Text('E-BIKE ROUTE SAFETY')),
-                  PopupMenuItem(value: 'settings', child: Text('SETTINGS')),
-                ],
-              ),
-              const SizedBox(width: 10),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const FeedbackRequestScreen()),
-                  );
-                },
-                child: Row(
-                  children: const [
-                    Text(
-                      "Feedback & Reqs",
-                      style: TextStyle(
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        title: Row(
+          children: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.menu, color: Colors.black),
+              color: const Color(0xFFFEF7FF),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              onSelected: _handleMenuSelection,
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                    value: 'recent', child: Text('RECENT ROUTE HISTORY')),
+                PopupMenuItem(
+                    value: 'specific', child: Text('E-BIKE SPECIFIC ROUTE')),
+                PopupMenuItem(value: 'safety', child: Text('E-BIKE ROUTE SAFETY')),
+                PopupMenuItem(value: 'settings', child: Text('SETTINGS')),
+              ],
+            ),
+            const SizedBox(width: 10),
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const FeedbackRequestScreen()),
+                );
+                _loadUserStats();
+              },
+              child: Row(
+                children: const [
+                  Text(
+                    "Feedback & Reqs",
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(Icons.emoji_emotions_outlined,
-                        color: Colors.deepOrange, size: 18),
-                  ],
-                ),
+                        color: Colors.black87),
+                  ),
+                  SizedBox(width: 4),
+                  Icon(Icons.emoji_emotions_outlined,
+                      color: Colors.deepOrange, size: 18),
+                ],
               ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.black),
-              onPressed: () {
-                _showLogoutConfirmationDialog(context); // Show confirmation dialog
-              },
             ),
           ],
         ),
-
-        body: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const CircleAvatar(
-                radius: 40,
-                backgroundColor: Colors.deepOrange,
-                child: Icon(Icons.person, size: 50, color: Colors.white),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                "Welcome Back,",
-                style: TextStyle(fontSize: 20, color: Colors.grey[700]),
-              ),
-              Text(
-                "$username!",
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepOrange,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.black),
+            onPressed: () {
+              _showLogoutConfirmationDialog(context); // pass the context here
+            },
+          ),
+        ],
+      ),
+      // Pull-to-refresh added
+      body: RefreshIndicator(
+        onRefresh: _loadUserStats,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.deepOrange,
+                  child: Icon(Icons.person, size: 50, color: Colors.white),
                 ),
-              ),
-              const SizedBox(height: 25),
-              Expanded(
-                child: GridView.count(
+                const SizedBox(height: 12),
+                Text("Welcome Back,", style: TextStyle(fontSize: 20, color: Colors.grey[700])),
+                Text("$username!",
+                    style: const TextStyle(
+                        fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepOrange)),
+                const SizedBox(height: 25),
+                GridView.count(
                   crossAxisCount: 2,
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   childAspectRatio: 1.2,
-                  children: const [
-                    _DashboardCard(title: "Total Rides", body: "Review body"),
-                    _DashboardCard(title: "Distance Traveled", body: "Review body"),
-                    _DashboardCard(title: "Review title", body: "Review body"),
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _DashboardCard(
+                      title: "Total Rides",
+                      body: "$totalRides rides",
+                    ),
+                    _DashboardCard(
+                      title: "Distance Traveled",
+                      body: "${totalDistance.toStringAsFixed(2)} km",
+                    ),
+                    _DashboardCard(
+                      title: "Average Duration",
+                      body: totalRides > 0
+                          ? "${averageDuration.toStringAsFixed(0)} mins"
+                          : "No data yet",
+                    ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: 0,
+        onTap: (index) async {
+          switch (index) {
+            case 0:
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        EBikeSpecificRouteScreen(userEmail: widget.email)),
+              );
+              break;
+            case 1:
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) =>
+                        RouteHistoryScreen(email: widget.email)),
+              );
+              break;
+            case 2:
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => CommunityScreen(username: username)),
+              );
+              break;
+          }
 
-        // Bottom Navigation Bar
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: 0, // Initially set to 'Start Route'
-          onTap: (index) {
-            setState(() {
-              // Set the index for the bottom tabs
-              // You can implement navigation for each tab here
-              switch (index) {
-                case 0:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const EBikeSpecificRouteScreen()),
-                  );
-                  break;
-                case 1:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RouteHistoryScreen()),
-                  );
-                  break;
-                case 2:
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CommunityScreen(username: username),
-                    ),
-                  );
-                  break;
-              }
-            });
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.directions_bike),
-              label: 'Start Route', // First Tab
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: 'Route History', // Second Tab
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.forum),
-              label: 'Community', // Third Tab
-            ),
+          // Refresh stats when returning from any screen
+          _loadUserStats();
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.directions_bike), label: 'Start Route'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Route History'),
+          BottomNavigationBarItem(icon: Icon(Icons.forum), label: 'Community'),
+        ],
+      ),
+    );
+  }
+}
+
+// Dashboard Card Widget
+class _DashboardCard extends StatelessWidget {
+  final String title;
+  final String body;
+  const _DashboardCard({required this.title, required this.body});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            Text(body, style: const TextStyle(color: Colors.black54)),
           ],
         ),
       ),
     );
   }
 }
+
+
+
 
 
 
@@ -2061,37 +2090,6 @@ class _ContactUsScreenState extends State<ContactUsScreen> {
               const SizedBox(height: 20),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-
-
-
-
-// Reusable Dashboard Card widget
-class _DashboardCard extends StatelessWidget {
-  final String title;
-  final String body;
-  const _DashboardCard({required this.title, required this.body});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            Text(body, style: const TextStyle(color: Colors.black54)),
-          ],
         ),
       ),
     );

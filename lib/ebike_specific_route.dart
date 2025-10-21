@@ -1,15 +1,20 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:Riderekta/api_endpoints.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'RouteHistoryScreen.dart';
+import 'api_endpoints.dart';
+
+
+
 
 class EBikeSpecificRouteScreen extends StatefulWidget {
-  const EBikeSpecificRouteScreen({super.key});
+  final String userEmail; // Pass user email from dashboard
+  const EBikeSpecificRouteScreen({super.key, required this.userEmail});
 
   @override
   State<EBikeSpecificRouteScreen> createState() =>
@@ -191,6 +196,7 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
             padding: const EdgeInsets.all(50),
           ));
 
+          // ✅ Save route to history
           await _saveRouteToHistory(distance, duration);
         } else {
           _handleRouteError();
@@ -212,34 +218,71 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     );
   }
 
+  // 🆕 Save route to server using email → backend finds user_id
   Future<void> _saveRouteToHistory(double distance, double duration) async {
     try {
       String startName = await _reverseGeocode(startLocation!);
       String endName = await _reverseGeocode(dropOffLocation!);
 
-      final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getString('route_history');
-      List<Map<String, dynamic>> routes =
-      stored != null ? List<Map<String, dynamic>>.from(json.decode(stored)) : [];
+      final url = Uri.parse(ApiEndpoints.saveRoute);
 
-      routes.insert(0, {
+      // Construct the JSON
+      final bodyJson = {
+        'email': widget.userEmail,
         'startName': startName,
         'endName': endName,
-        'distance': distance.toStringAsFixed(2),
-        'duration': duration.toStringAsFixed(0),
+        'distance': distance,
+        'duration': duration,
+        'timestamp': DateTime.now().toIso8601String(),
         'startLat': startLocation!.latitude,
         'startLon': startLocation!.longitude,
         'endLat': dropOffLocation!.latitude,
         'endLon': dropOffLocation!.longitude,
-        'timestamp': DateTime.now().toString(),
-      });
+      };
 
-      if (routes.length > 20) routes = routes.sublist(0, 20);
-      await prefs.setString('route_history', json.encode(routes));
+      print("📤 Sending route JSON: ${jsonEncode(bodyJson)}");
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(bodyJson),
+      );
+
+      print("📥 Response status: ${response.statusCode}");
+      print("📥 Response body: ${response.body}");
+
+      // Try decoding response safely
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(response.body);
+      } catch (e) {
+        print("⚠️ JSON decode error: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("⚠️ Invalid JSON response: ${response.body}")),
+        );
+        return;
+      }
+
+      if (data['success'] != true) {
+        print("❌ Failed to save route: ${data['message']}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Failed to save route: ${data['message']}")),
+        );
+      } else {
+        print("✅ Route saved successfully!");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Route saved successfully!")),
+        );
+      }
     } catch (e) {
-      debugPrint("Save history error: $e");
+      print("⚠️ Exception during route save: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("⚠️ Exception: $e")),
+      );
     }
   }
+
+
 
   Future<String> _reverseGeocode(LatLng location) async {
     final url =
@@ -304,7 +347,6 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
     });
   }
 
-  // 🆕 Load a route from history
   void _loadRouteFromHistory(Map<String, dynamic> route) {
     final start = LatLng(route['startLat'], route['startLon']);
     final end = LatLng(route['endLat'], route['endLon']);
@@ -331,7 +373,9 @@ class _EBikeSpecificRouteScreenState extends State<EBikeSpecificRouteScreen> {
             onPressed: () async {
               final selectedRoute = await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const RouteHistoryScreen()),
+                MaterialPageRoute(
+                  builder: (_) => RouteHistoryScreen(email: widget.userEmail),
+                ),
               );
 
               if (selectedRoute != null) {
