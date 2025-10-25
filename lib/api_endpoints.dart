@@ -41,5 +41,7 @@ class ApiEndpoints {
   static const String getRoute = "$baseUrl/fetch_routes.php";
   static const String saveRoute = "$baseUrl/save_route.php";
 
+  static const String adminRoutes = "$baseUrl/admin_routes.php";
+
 
 }

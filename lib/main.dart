@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'ebike_specific_route.dart';
 import 'admin.dart';
 import 'RouteHistoryScreen.dart';
+import 'RouteSafetyScreen.dart';
 import 'api_endpoints.dart';
 import 'content_service.dart';
 import 'content_model.dart';
@@ -1514,73 +1515,6 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
 
 
 
-
-
-
-class RouteSafetyScreen extends StatelessWidget {
-  const RouteSafetyScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("E-Bike Route Safety")),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Text(
-                "Safe Paths",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const Text(
-              "Dedicated Cycling Lanes, Low-Traffic Roads",
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            Expanded(
-              child: ListView(
-                children: [
-                  _buildSafeRouteTile(context, 'Safe Commuter Path', 'Dedicated Cycling Lane', 'Low'),
-                  _buildSafeRouteTile(context, 'Downtown E-Bike Lane', 'Low-Traffic Road', 'Medium'),
-                  _buildSafeRouteTile(context, 'Riverside Path', 'Dedicated Cycling Lane', 'Low'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSafeRouteTile(BuildContext context, String routeName, String routeType, String riskLevel) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      title: Text(routeName, style: const TextStyle(fontWeight: FontWeight.bold)),
-      subtitle: Text('Type: $routeType'),
-      trailing: Text('Risk: $riskLevel', style: TextStyle(color: _getRiskColor(riskLevel))),
-      onTap: () {
-        // Simulate real-time risk update
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Updating real-time risk for $routeName')),
-        );
-      },
-    );
-  }
-
-  Color _getRiskColor(String riskLevel) {
-    switch (riskLevel) {
-      case 'Low':
-        return Colors.green;
-      case 'Medium':
-        return Colors.orange;
-      case 'High':
-        return Colors.red;
-      default:
-        return Colors.black;
-    }
-  }
-}
 
 
 

@@ -5,7 +5,7 @@ import 'main.dart';
 import 'api_endpoints.dart';
 import 'content_service.dart';
 import 'content_model.dart';
-
+import 'package:fl_chart/fl_chart.dart';
 
 
 void main() {
@@ -862,43 +862,611 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 // ------------------------------------------------------------
 // 🧩 REPORTS
 // ------------------------------------------------------------
-class ReportsScreen extends StatelessWidget {
-  final List<String> reports = ["User Activity", "Route Usage", "Feedback"];
+
+
+
+
+
+
+class ReportsScreen extends StatefulWidget {
+  const ReportsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    String? selectedReport;
-    return Scaffold(
-      appBar: AppBar(title: const Text("Generate Reports")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: StatefulBuilder(builder: (context, setState) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              DropdownButton<String>(
-                hint: const Text("Select Report Type"),
-                value: selectedReport,
-                onChanged: (value) => setState(() => selectedReport = value),
-                items: reports
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                    .toList(),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: selectedReport == null
-                    ? null
-                    : () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content:
-                      Text("$selectedReport Report Generated!")),
-                ),
-                child: const Text("Generate Report"),
-              )
-            ],
+  _ReportsScreenState createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends State<ReportsScreen> {
+  // Loading states
+  bool loadingSummaries = true;
+  bool loadingReport = false;
+
+  // Summaries / KPIs
+  int totalUsers = 0;
+  int activeUsers = 0;
+  int inactiveUsers = 0;
+  int totalRoutes = 0;
+  int totalFeedback = 0;
+  int totalContacts = 0;
+
+  // Report data and selections
+  String? selectedReport;
+  List<dynamic> reportData = [];
+
+  // Chart data structures
+  Map<String, int> routesPerDay = {}; // date string -> count
+  Map<String, int> usersPerDay = {}; // date string -> count (user growth)
+  Map<String, int> feedbackByCategory = {}; // category -> count (if available)
+
+  // UI constants
+  final int daysToShow = 7;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllSummaries();
+  }
+
+  // --------------------- Data Loading ---------------------
+
+  Future<void> _loadAllSummaries() async {
+    setState(() => loadingSummaries = true);
+    await Future.wait([
+      _loadUsers(),
+      _loadRoutes(),
+      _loadFeedback(),
+      _loadContacts(),
+    ]);
+    setState(() => loadingSummaries = false);
+  }
+
+  Future<void> _loadUsers() async {
+    try {
+      final res = await http.get(Uri.parse(ApiEndpoints.adminGetUsers));
+      if (res.statusCode == 200) {
+        final decoded = json.decode(res.body);
+        final List users = (decoded is List) ? decoded : (decoded['users'] ?? decoded ?? []);
+        totalUsers = users.length;
+
+        // active flag detection
+        activeUsers = users.where((u) {
+          final v = u['isActive'];
+          return v == 1 || v == '1' || v == true || v == 'true';
+        }).length;
+        inactiveUsers = totalUsers - activeUsers;
+
+        // Build usersPerDay from created_at if present (defensive)
+        usersPerDay.clear();
+        for (final u in users) {
+          final ts = (u['created_at'] ?? u['timestamp'] ?? u['date_created'] ?? '').toString();
+          final date = _extractDate(ts);
+          if (date.isNotEmpty) usersPerDay[date] = (usersPerDay[date] ?? 0) + 1;
+        }
+      } else {
+        debugPrint("Users fetch failed: ${res.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error loading users: $e");
+    }
+    setState(() {});
+  }
+
+  Future<void> _loadRoutes() async {
+    try {
+      // prefer adminRoutes endpoint (admin view)
+      final url = ApiEndpoints.adminRoutes.isNotEmpty ? ApiEndpoints.adminRoutes : ApiEndpoints.getRoute;
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode == 200) {
+        final decoded = json.decode(res.body);
+        List routes = [];
+        if (decoded is List) routes = decoded;
+        else if (decoded['routes'] != null) routes = decoded['routes'];
+        else if (decoded['data'] != null) routes = decoded['data'];
+
+        totalRoutes = routes.length;
+
+        // build routesPerDay
+        routesPerDay.clear();
+        for (final r in routes) {
+          final ts = (r['timestamp'] ?? r['created_at'] ?? '').toString();
+          final date = _extractDate(ts);
+          routesPerDay[date] = (routesPerDay[date] ?? 0) + 1;
+        }
+      } else {
+        debugPrint("Routes fetch failed: ${res.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error loading routes: $e");
+    }
+    setState(() {});
+  }
+
+  Future<void> _loadFeedback() async {
+    try {
+      final res = await http.get(Uri.parse(ApiEndpoints.adminFeedback));
+      if (res.statusCode == 200) {
+        final decoded = json.decode(res.body);
+        final List fbList = (decoded is List) ? decoded : (decoded['feedback'] ?? []);
+        totalFeedback = fbList.length;
+
+        // categorize feedback
+        feedbackByCategory.clear();
+        for (final f in fbList) {
+          final cat = (f['category'] ?? f['type'] ?? 'Other').toString();
+          feedbackByCategory[cat] = (feedbackByCategory[cat] ?? 0) + 1;
+        }
+      } else {
+        debugPrint("Feedback fetch failed: ${res.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error loading feedback: $e");
+    }
+    setState(() {});
+  }
+
+  Future<void> _loadContacts() async {
+    try {
+      final res = await http.get(Uri.parse(ApiEndpoints.adminGetContact));
+      if (res.statusCode == 200) {
+        final decoded = json.decode(res.body);
+        final List contacts = (decoded is List) ? decoded : (decoded['contacts'] ?? []);
+        totalContacts = contacts.length;
+      }
+    } catch (e) {
+      debugPrint("Error loading contacts: $e");
+    }
+    setState(() {});
+  }
+
+  /// Fetch the selected report's rows for the table
+  Future<void> _fetchSelectedReport() async {
+    if (selectedReport == null) return;
+
+    setState(() {
+      loadingReport = true;
+      reportData = [];
+    });
+
+    try {
+      String url;
+      if (selectedReport == 'User Activity') {
+        url = ApiEndpoints.adminGetUsers;
+      } else if (selectedReport == 'Route Usage') {
+        url = ApiEndpoints.adminRoutes.isNotEmpty ? ApiEndpoints.adminRoutes : ApiEndpoints.getRoute;
+      } else {
+        url = ApiEndpoints.adminFeedback;
+      }
+
+      final res = await http.get(Uri.parse(url));
+      if (res.statusCode == 200) {
+        final decoded = json.decode(res.body);
+        List data = [];
+        if (decoded is List) data = decoded;
+        else if (decoded['users'] != null) data = decoded['users'];
+        else if (decoded['routes'] != null) data = decoded['routes'];
+        else if (decoded['feedback'] != null) data = decoded['feedback'];
+        else if (decoded['data'] != null) data = decoded['data'];
+        else if (decoded['results'] != null) data = decoded['results'];
+        else data = [];
+
+        reportData = data;
+      } else {
+        debugPrint("Report fetch failed: ${res.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Error fetching report: $e");
+      reportData = [];
+    }
+
+    setState(() => loadingReport = false);
+  }
+
+  // --------------------- Helpers ---------------------
+
+  // Extract date (YYYY-MM-DD) from various timestamp formats; returns '' if none
+  String _extractDate(String ts) {
+    if (ts == null) return '';
+    final s = ts.toString();
+    if (s.isEmpty) return '';
+    // handle ISO-like "2025-10-21T00:26:33.666442" -> take part before 'T'
+    if (s.contains('T')) return s.split('T')[0];
+    // handle "2025-10-21 00:26:33"
+    if (s.contains(' ')) return s.split(' ')[0];
+    // if already YYYY-MM-DD
+    final regex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
+    if (regex.hasMatch(s)) return s;
+    return s; // fallback (may be 'unknown' or other)
+  }
+
+  // Build last N days list (strings)
+  List<String> _lastNDates(int n) {
+    final today = DateTime.now().toUtc();
+    final List<String> list = [];
+    for (int i = n - 1; i >= 0; i--) {
+      final d = today.subtract(Duration(days: i));
+      list.add("${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}");
+    }
+    return list;
+  }
+
+  // --------------------- Chart widgets ---------------------
+
+  Widget _routesPerDayBarChart() {
+    // Show last `daysToShow` days (even if zero)
+    final dates = _lastNDates(daysToShow);
+    final values = dates.map((d) => (routesPerDay[d] ?? 0).toDouble()).toList();
+
+    final maxVal = (values.isEmpty ? 1.0 : (values.reduce((a, b) => a > b ? a : b) + 1.0));
+
+    return SizedBox(
+      height: 220,
+      child: BarChart(BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxVal,
+        barGroups: List.generate(values.length, (i) {
+          return BarChartGroupData(
+            x: i,
+            barRods: [BarChartRodData(toY: values[i], width: 16, borderRadius: BorderRadius.circular(4))],
           );
         }),
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 28)),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
+                if (idx < 0 || idx >= dates.length) return const SizedBox.shrink();
+                final label = dates[idx].split('-').sublist(1).join('-'); // MM-DD
+                return SideTitleWidget(axisSide: meta.axisSide, child: Text(label, style: const TextStyle(fontSize: 10)));
+              },
+            ),
+          ),
+        ),
+        gridData: FlGridData(show: true),
+      )),
+    );
+  }
+
+  Widget _usersGrowthLineChart() {
+    // build last N days counts from usersPerDay. We will cumulative-sum to show growth
+    final dates = _lastNDates(daysToShow);
+    final daily = dates.map((d) => (usersPerDay[d] ?? 0)).toList();
+    // cumulative
+    final cum = <double>[];
+    double running = 0;
+    for (final v in daily) {
+      running += v;
+      cum.add(running);
+    }
+
+    if (cum.every((v) => v == 0)) {
+      return const SizedBox(height: 160, child: Center(child: Text("No user growth data")));
+    }
+
+    final maxY = (cum.reduce((a, b) => a > b ? a : b) + 1).toDouble();
+
+    return SizedBox(
+      height: 180,
+      child: LineChart(LineChartData(
+        lineBarsData: [
+          LineChartBarData(spots: List.generate(cum.length, (i) => FlSpot(i.toDouble(), cum[i])), isCurved: true, dotData: FlDotData(show: true)),
+        ],
+        titlesData: FlTitlesData(
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true)),
+          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
+            final idx = v.toInt();
+            final dates = _lastNDates(daysToShow);
+            if (idx < 0 || idx >= dates.length) return const SizedBox.shrink();
+            final label = dates[idx].split('-').sublist(1).join('-'); // MM-DD
+            return SideTitleWidget(axisSide: meta.axisSide, child: Text(label, style: const TextStyle(fontSize: 10)));
+          })),
+        ),
+        gridData: FlGridData(show: true),
+        minY: 0,
+        maxY: maxY,
+      )),
+    );
+  }
+
+  Widget _feedbackPieChart() {
+    if (feedbackByCategory.isEmpty) return const SizedBox(height: 140, child: Center(child: Text("No feedback categories")));
+    final total = feedbackByCategory.values.fold<int>(0, (p, n) => p + n);
+    final colors = [Colors.orange, Colors.blue, Colors.purple, Colors.teal, Colors.brown];
+    int idx = 0;
+    final sections = feedbackByCategory.entries.map((e) {
+      final sec = PieChartSectionData(
+        value: e.value.toDouble(),
+        title: '${((e.value / total) * 100).round()}%',
+        color: colors[idx % colors.length],
+        radius: 48,
+        titleStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+      );
+      idx++;
+      return sec;
+    }).toList();
+    return SizedBox(height: 160, child: PieChart(PieChartData(centerSpaceRadius: 18, sections: sections)));
+  }
+
+  // --------------------- Table builders ---------------------
+
+  Widget _usersTable() {
+    if (reportData.isEmpty) return const Padding(padding: EdgeInsets.all(16), child: Text('No users to show'));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('ID')),
+          DataColumn(label: Text('Name')),
+          DataColumn(label: Text('Email')),
+          DataColumn(label: Text('Mobile')),
+          DataColumn(label: Text('Status')),
+        ],
+        rows: reportData.map((u) {
+          return DataRow(cells: [
+            DataCell(Text(u['id']?.toString() ?? '')),
+            DataCell(Text(u['name']?.toString() ?? '')),
+            DataCell(Text(u['email']?.toString() ?? '')),
+            DataCell(Text(u['mobile']?.toString() ?? '')),
+            DataCell(Text((u['isActive'] == 1 || u['isActive'] == '1') ? 'Active' : 'Inactive')),
+          ]);
+        }).toList(),
       ),
     );
   }
+
+  Widget _routesTable() {
+    if (reportData.isEmpty) return const Padding(padding: EdgeInsets.all(16), child: Text('No routes to show'));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('ID')),
+          DataColumn(label: Text('User Email')),
+          DataColumn(label: Text('Start')),
+          DataColumn(label: Text('End')),
+          DataColumn(label: Text('Distance')),
+          DataColumn(label: Text('Duration')),
+          DataColumn(label: Text('Date')),
+        ],
+        rows: reportData.map((r) {
+          final date = _extractDate((r['timestamp'] ?? r['created_at'] ?? '').toString());
+          return DataRow(cells: [
+            DataCell(Text(r['id']?.toString() ?? '')),
+            DataCell(Text(r['email']?.toString() ?? r['user_email']?.toString() ?? '')),
+            DataCell(Text(r['startName']?.toString() ?? '')),
+            DataCell(Text(r['endName']?.toString() ?? '')),
+            DataCell(Text(r['distance']?.toString() ?? '')),
+            DataCell(Text(r['duration']?.toString() ?? '')),
+            DataCell(Text(date)),
+          ]);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _feedbackTable() {
+    if (reportData.isEmpty) return const Padding(padding: EdgeInsets.all(16), child: Text('No feedback to show'));
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('ID')),
+          DataColumn(label: Text('Message')),
+          DataColumn(label: Text('Attachment')),
+          DataColumn(label: Text('Date')),
+        ],
+        rows: reportData.map((f) {
+          final date = _extractDate((f['created_at'] ?? f['timestamp'] ?? '').toString());
+          return DataRow(cells: [
+            DataCell(Text(f['id']?.toString() ?? '')),
+            DataCell(SizedBox(width: 300, child: Text(f['message']?.toString() ?? '', overflow: TextOverflow.ellipsis))),
+            DataCell(Text(f['attachment']?.toString() ?? '—')),
+            DataCell(Text(date)),
+          ]);
+        }).toList(),
+      ),
+    );
+  }
+
+  // --------------------- UI helpers ---------------------
+
+  Widget _kpiCard(String title, String value, IconData icon, Color color) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxWidth: 170,
+        minWidth: 150,
+      ),
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 4,
+              spreadRadius: 1,
+              offset: Offset(0, 2),
+              color: Colors.black12,
+            )
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 24, color: color),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _sectionCard({required String title, required Widget child}) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        child,
+      ])),
+    );
+  }
+
+  // --------------------- Main Build ---------------------
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      appBar: AppBar(title: const Text('Admin Reports — Dashboard')),
+      backgroundColor: Colors.grey[100], // ✅ Better background when scrolling
+      body: SafeArea(
+        child: loadingSummaries
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+          children: [
+            // ✅ KPI row stays fixed at top
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.white,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _kpiCard('Total Users', totalUsers.toString(), Icons.people, Colors.blue),
+                    _kpiCard('Active Users', activeUsers.toString(), Icons.check_circle, Colors.green),
+                    _kpiCard('Inactive Users', inactiveUsers.toString(), Icons.cancel, Colors.red),
+                    _kpiCard('Total Routes', totalRoutes.toString(), Icons.map, Colors.teal),
+                    _kpiCard('Total Feedback', totalFeedback.toString(), Icons.feedback, Colors.orange),
+                    _kpiCard('Total Contacts', totalContacts.toString(), Icons.mail, Colors.purple),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ✅ Scrollable dashboard content below
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ✅ Only Routes Per Day chart remains
+                    _sectionCard(
+                      title: 'Routes Per Day (last $daysToShow days)',
+                      child: _routesPerDayBarChart(),
+                    ),
+
+                    // ✅ Feedback chart & report controls stay
+                    _sectionCard(
+                      title: 'Feedback Distribution',
+                      child: _feedbackPieChart(),
+                    ),
+
+                    _sectionCard(
+                      title: 'View Reports',
+                      child: Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: selectedReport,
+                            decoration: const InputDecoration(
+                              border: OutlineInputBorder(),
+                            ),
+                            items: ['User Activity', 'Route Usage', 'Feedback']
+                                .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                                .toList(),
+                            onChanged: (val) {
+                              setState(() {
+                                selectedReport = val;
+                                reportData = [];
+                              });
+                            },
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: selectedReport == null ? null : _fetchSelectedReport,
+                                  icon: const Icon(Icons.visibility),
+                                  label: const Text('View'),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                onPressed: _loadAllSummaries,
+                                icon: const Icon(Icons.refresh),
+                              )
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // ✅ Tables remain untouched
+                    ExpansionTile(
+                      title: const Text('Users (table)'),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: selectedReport == 'User Activity' && loadingReport
+                              ? const CircularProgressIndicator()
+                              : _usersTable(),
+                        ),
+                      ],
+                    ),
+
+                    ExpansionTile(
+                      title: const Text('Routes (table)'),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: selectedReport == 'Route Usage' && loadingReport
+                              ? const CircularProgressIndicator()
+                              : _routesTable(),
+                        ),
+                      ],
+                    ),
+
+                    ExpansionTile(
+                      title: const Text('Feedback (table)'),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: selectedReport == 'Feedback' && loadingReport
+                              ? const CircularProgressIndicator()
+                              : _feedbackTable(),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 }
