@@ -13,18 +13,9 @@ import 'content_model.dart';
 
 
 
-
-
-
-
-
-
-
 void main() {
   runApp(const RiderektaApp());
 }
-
-
 
 
 class RiderektaApp extends StatelessWidget {
@@ -1516,6 +1507,86 @@ class _FeedbackRequestScreenState extends State<FeedbackRequestScreen> {
 
 
 
+
+
+class RouteSafetyScreen extends StatelessWidget {
+  const RouteSafetyScreen({super.key});
+
+  // Simulated method to get AI-driven suggestions for the route
+  Future<String> _getSafetySuggestions(String routeName) async {
+    // Simulate calling an AI service or model
+    await Future.delayed(Duration(seconds: 2)); // Simulating network delay
+    if (routeName == "Downtown E-Bike Lane") {
+      return "High traffic expected. Consider an alternative route.";
+    }
+    return "The route is clear and safe!";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text("E-Bike Route Safety")),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Text(
+                "Safe Paths",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const Text(
+              "Dedicated Cycling Lanes, Low-Traffic Roads",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+            Expanded(
+              child: ListView(
+                children: [
+                  _buildSafeRouteTile(context, 'Safe Commuter Path', 'Dedicated Cycling Lane', 'Low'),
+                  _buildSafeRouteTile(context, 'Downtown E-Bike Lane', 'Low-Traffic Road', 'Medium'),
+                  _buildSafeRouteTile(context, 'Riverside Path', 'Dedicated Cycling Lane', 'Low'),
+                  // Add more routes here as needed
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Method to build each route tile dynamically
+  Widget _buildSafeRouteTile(BuildContext context, String routeName, String routeType, String riskLevel) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      title: Text(routeName, style: const TextStyle(fontWeight: FontWeight.bold)),
+      subtitle: Text('Type: $routeType'),
+      trailing: Text('Risk: $riskLevel', style: TextStyle(color: _getRiskColor(riskLevel))),
+      onTap: () async {
+        // Simulate real-time risk update and get AI suggestions
+        String safetySuggestion = await _getSafetySuggestions(routeName);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Safety Suggestion: $safetySuggestion')),
+        );
+      },
+    );
+  }
+
+  // Helper function to assign a color based on the risk level
+  Color _getRiskColor(String riskLevel) {
+    switch (riskLevel) {
+      case 'Low':
+        return Colors.green;
+      case 'Medium':
+        return Colors.orange;
+      case 'High':
+        return Colors.red;
+      default:
+        return Colors.black;
+    }
+  }
+}
 
 
 

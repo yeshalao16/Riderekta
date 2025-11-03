@@ -1,6 +1,8 @@
 class ApiEndpoints {
   // 🔗 Base URL (change this once if your server IP or folder changes)
-  static const String baseUrl = "http://192.168.254.116/riderekta";
+  static const String baseUrl = "http://54.206.71.165";
+
+
 
   // 🟢 Authentication
   static const String login = "$baseUrl/login.php";
