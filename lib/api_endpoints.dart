@@ -45,5 +45,8 @@ class ApiEndpoints {
 
   static const String adminRoutes = "$baseUrl/admin_routes.php";
 
+  static const String aiSafety = "$baseUrl/ai_safety.php";
+
+
 
 }
