@@ -57,4 +57,4 @@ If you like this project, ⭐ star the repo or contribute!
 ## 💬 Future Plans
 - Publish to **Google Play Store**
 - Release **iOS (TestFlight / App Store)** version
-- Add community feedback and route-sharing features
+
