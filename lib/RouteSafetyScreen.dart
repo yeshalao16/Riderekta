@@ -29,7 +29,43 @@ class _RouteSafetyScreenState extends State<RouteSafetyScreen> {
   }
 
   Future<void> _loadSuggestions() async {
+    setState(() => isLoading = true);
+
     try {
+      // ✅ Check if location services are enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() {
+          suggestions = ["Please enable location services on your device."];
+          isLoading = false;
+        });
+        return;
+      }
+
+      // ✅ Check permission status
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() {
+            suggestions = ["Location permission denied. Please allow access."];
+            isLoading = false;
+          });
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        setState(() {
+          suggestions = [
+            "Location permission permanently denied. Please enable it in Settings."
+          ];
+          isLoading = false;
+        });
+        return;
+      }
+
+      // ✅ Now safe to get location
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -53,6 +89,7 @@ class _RouteSafetyScreenState extends State<RouteSafetyScreen> {
       });
     }
   }
+
 
   Future<void> _sendMessage() async {
     final text = _controller.text.trim();
@@ -98,8 +135,37 @@ class _RouteSafetyScreenState extends State<RouteSafetyScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
+          : (suggestions.isNotEmpty &&
+          suggestions.first.contains("permission"))
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              suggestions.first,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadSuggestions,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                "Grant Location Access",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      )
           : Column(
-        children: [
+
+      children: [
           // 🔹 Top half: Suggestions
           Expanded(
             flex: 1,
