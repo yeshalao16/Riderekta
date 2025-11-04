@@ -1,20 +1,20 @@
 workflows:
-  ios-build:
-    name: iOS IPA Build
+  build_ios_ipa:
+    name: "Build iOS IPA (no signing)"
     instance_type: mac_mini_m2
-    max_build_duration: 60
     environment:
       flutter: stable
       xcode: latest
     scripts:
-      - name: Clean and get dependencies
+      - name: Get dependencies
         script: |
-          flutter clean
           flutter pub get
-      - name: Build unsigned IPA
+      - name: Build iOS (no codesign)
         script: |
-          flutter build ipa --release --no-codesign
+          flutter build ios --release --no-codesign
+          mkdir -p build/ios/ipa
+          cd build/ios/iphoneos
+          zip -r Runner.ipa Runner.app
+          mv Runner.ipa ../ipa/
     artifacts:
-      - build/ios/ipa/*.ipa
-      - build/ios/iphoneos/*.app
-      - build/ios/**/*.ipa
+      - build/ios/ipa/Runner.ipa
