@@ -46,11 +46,6 @@ You can still:
 
 ---
 
-## 📸 Screenshots
-_Add screenshots of your home screen, route safety page, and AI chat here (optional)_
-
----
-
 ## 👨‍💻 Developer
 **Developed by:** [@yeshalao16](https://github.com/yeshalao16) [@gkbn2005](https://github.com/gkbn2005) [@kfcsable](https://github.com/kfcsable) [crawfordfan22](https://github.com/CrawfordFan223)
 
